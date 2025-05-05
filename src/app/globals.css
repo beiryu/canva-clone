@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  height: 100%;
+}
+
+@layer base {
+  :root {
+    --background: 224 16% 8%; /* deep dark gray */
+    --foreground: 0 0% 100%; /* white */
+
+    --card: 224 16% 10%; /* darker card */
+    --card-foreground: 0 0% 100%; /* white */
+
+    --primary: 75 100% 60%; /* neon yellow-green (#D6FF3A) */
+    --primary-foreground: 224 16% 8%; /* dark for contrast */
+
+    --secondary: 224 16% 12%; /* darker muted dark gray */
+    --secondary-foreground: 0 0% 100%; /* white */
+
+    --muted: 224 16% 10%; /* darker muted gray */
+    --muted-foreground: 0 0% 80%; /* light gray */
+
+    --accent: 75 100% 60%; /* neon yellow-green */
+    --accent-foreground: 224 16% 6%; /* darker for contrast */
+
+    --border: 224 16% 14%; /* darker muted border */
+    --input: 224 16% 14%; /* darker input */
+
+    --ring: 75 100% 60%; /* neon accent for focus */
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 224 16% 8%; /* deep dark gray */
+    --foreground: 0 0% 100%; /* white */
+
+    --card: 224 16% 10%; /* darker card */
+    --card-foreground: 0 0% 100%; /* white */
+
+    --primary: 75 100% 60%; /* neon yellow-green (#D6FF3A) */
+    --primary-foreground: 224 16% 8%; /* dark for contrast */
+
+    --secondary: 224 16% 12%; /* darker muted dark gray */
+    --secondary-foreground: 0 0% 100%; /* white */
+
+    --muted: 224 16% 10%; /* darker muted gray */
+    --muted-foreground: 0 0% 80%; /* light gray */
+
+    --accent: 75 100% 60%; /* neon yellow-green */
+    --accent-foreground: 224 16% 6%; /* darker for contrast */
+
+    --border: 224 16% 14%; /* darker muted border */
+    --input: 224 16% 14%; /* darker input */
+
+    --ring: 75 100% 60%; /* neon accent for focus */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+.circle-picker {
+  width: auto !important;
+}
+
+.chrome-picker {
+  width: auto !important;
+  box-shadow: none !important;
+  border-radius: 0.5rem !important;
+  overflow: hidden !important;
+}
