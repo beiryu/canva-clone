@@ -51,6 +51,19 @@ export const SignInCard = () => {
     signIn(provider, { callbackUrl: "/" });
   };
 
+  const getErrorMessage = (error: string) => {
+    switch (error) {
+      case "OAuthSignin":
+      case "OAuthCallback":
+      case "OAuthCreateAccount":
+        return "Error connecting to provider. Please try again.";
+      case "OAuthAccountNotLinked":
+        return "Email already used with different provider.";
+      default:
+        return "Invalid email or password";
+    }
+  };
+
   return (
     <Card className="w-full h-full p-8">
       <CardHeader className="px-0 pt-0">
@@ -62,7 +75,7 @@ export const SignInCard = () => {
       {!!error && (
         <div className="bg-destructive/15 p-3 rounded-md flex items-center gap-x-2 text-sm text-destructive mb-6">
           <TriangleAlert className="size-4" />
-          <p>Invalid email or password</p>
+          <p>{getErrorMessage(error)}</p>
         </div>
       )}
       <CardContent className="space-y-5 px-0 pb-0">

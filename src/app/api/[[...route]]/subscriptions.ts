@@ -165,7 +165,12 @@ const app = new Hono()
             status: payload.data.status,
             updatedAt: new Date(),
           })
-          .where(eq(subscriptions.subscriptionId, payload.data.subscriptionId as string));
+          .where(
+            eq(
+              subscriptions.subscriptionId,
+              payload.data.subscriptionId as string,
+            ),
+          );
       },
     });
 

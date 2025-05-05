@@ -17,7 +17,7 @@ function getAuthConfig(c: Context): AuthConfig {
   return {
     secret: process.env.AUTH_SECRET,
     ...authConfig,
-  };
+  } as AuthConfig;
 }
 
 const app = new Hono().basePath("/api");

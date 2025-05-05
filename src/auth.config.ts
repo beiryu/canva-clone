@@ -1,12 +1,12 @@
-import { z } from "zod";
+import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import bcrypt from "bcryptjs";
-import type { NextAuthConfig } from "next-auth";
 import { eq } from "drizzle-orm";
+import type { NextAuthConfig } from "next-auth";
 import { JWT } from "next-auth/jwt";
+import Credentials from "next-auth/providers/credentials";
 import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
-import Credentials from "next-auth/providers/credentials";
-import { DrizzleAdapter } from "@auth/drizzle-adapter";
+import { z } from "zod";
 
 import { db } from "@/db/drizzle";
 import { users } from "@/db/schema";

@@ -4,13 +4,13 @@ import { toast } from "sonner";
 
 import { client } from "@/lib/hono";
 
-type ResponseType = InferResponseType<typeof client.api.subscriptions.billing["$post"], 200>;
+type ResponseType = InferResponseType<
+  (typeof client.api.subscriptions.billing)["$post"],
+  200
+>;
 
 export const useBilling = () => {
-  const mutation = useMutation<
-    ResponseType,
-    Error
-  >({
+  const mutation = useMutation<ResponseType, Error>({
     mutationFn: async () => {
       const response = await client.api.subscriptions.billing.$post();
 

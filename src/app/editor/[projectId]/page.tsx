@@ -7,15 +7,17 @@ import { useGetProject } from "@/features/projects/api/use-get-project";
 
 import { Editor } from "@/features/editor/components/editor";
 import { Button } from "@/components/ui/button";
+import { use } from "react";
 
 interface EditorProjectIdPageProps {
-  params: {
+  params: Promise<{
     projectId: string;
-  };
+  }>;
 }
 
 const EditorProjectIdPage = ({ params }: EditorProjectIdPageProps) => {
-  const { data, isLoading, isError } = useGetProject(params.projectId);
+  const { projectId } = use(params);
+  const { data, isLoading, isError } = useGetProject(projectId);
 
   if (isLoading || !data) {
     return (
