@@ -100,8 +100,8 @@ const app = new Hono()
       customerMetadata: originURL.searchParams.has("customerMetadata")
         ? JSON.parse(originURL.searchParams.get("customerMetadata") ?? "{}")
         : {
-          userId: auth.token.id
-        },
+            userId: auth.token.id,
+          },
       allowDiscountCodes: originURL.searchParams.has("allowDiscountCodes")
         ? originURL.searchParams.get("allowDiscountCodes") === "true"
         : undefined,
@@ -123,7 +123,7 @@ const app = new Hono()
     const webhookSecret = process.env.POLAR_WEBHOOK_SECRET!;
 
     const requestBody = await c.req.text();
-    console.log('requestBody', requestBody);
+    console.log("requestBody", requestBody);
 
     const webhookHeaders = {
       "webhook-id": c.req.header("webhook-id") ?? "",
@@ -150,8 +150,8 @@ const app = new Hono()
       webhookSecret,
       onCheckoutUpdated: async (payload) => {
         const subscription = await polar.subscriptions.get({
-          id: webhookPayload.data.id
-        })
+          id: webhookPayload.data.id,
+        });
         console.log(subscription);
         // await db.insert(subscriptions).values({
         //   status: payload.data.status,
