@@ -1,12 +1,12 @@
+import { AuthConfig, initAuthConfig } from "@hono/auth-js";
 import { Context, Hono } from "hono";
 import { handle } from "hono/vercel";
-import { AuthConfig, initAuthConfig } from "@hono/auth-js";
 
 import ai from "./ai";
-import users from "./users";
 import images from "./images";
 import projects from "./projects";
 import subscriptions from "./subscriptions";
+import users from "./users";
 
 import authConfig from "@/auth.config";
 

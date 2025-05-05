@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Paintbrush } from "lucide-react";
-import { useStyleStore } from "@/store/style-store";
+import { useStyleStore } from "@/features/editor/stores/use-style-store";
 
 export default function ImageStyles() {
   const { selectedStyle, setIsStyleDrawerOpen } = useStyleStore();

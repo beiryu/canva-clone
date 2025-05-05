@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import ImageStyles from "./image-styles";
 import VisualStylesDrawer from "./visual-styles-drawer";
-import { useStyleStore } from "@/store/style-store";
+import { useStyleStore } from "@/features/editor/stores/use-style-store";
 
 interface GenerateSidebarProps {
   editor: Editor | undefined;

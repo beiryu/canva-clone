@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useStyleStore } from "@/store/style-store";
+import { useStyleStore } from "@/features/editor/stores/use-style-store";
 
 // Define the available visual styles
 const visualStyles = [
