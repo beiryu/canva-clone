@@ -1,7 +1,7 @@
-import { z } from "zod";
-import { Hono } from "hono";
 import { verifyAuth } from "@hono/auth-js";
 import { zValidator } from "@hono/zod-validator";
+import { Hono } from "hono";
+import { z } from "zod";
 
 import { replicate } from "@/lib/replicate";
 
@@ -23,7 +23,7 @@ const app = new Hono()
       };
 
       const output: unknown = await replicate.run(
-        "cjwbw/rembg:fb8af171cfa1616ddcf1242c093f9c46bcada5ad4cf6f2fbe8b81b330ec5c003",
+        "lucataco/remove-bg:95fcc2a26d3899cd6c2691c900465aaeff466285a65c14638cc5f36f34befaf1",
         { input },
       );
 

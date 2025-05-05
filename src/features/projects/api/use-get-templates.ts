@@ -21,6 +21,7 @@ export const useGetTemplates = (apiQuery: RequestType) => {
       },
     ],
     queryFn: async () => {
+      return [];
       const response = await client.api.projects.templates.$get({
         query: apiQuery,
       });
