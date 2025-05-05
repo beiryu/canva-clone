@@ -1,20 +1,17 @@
-import Stripe from "stripe";
-import { Hono } from "hono";
-import { eq } from "drizzle-orm";
 import { verifyAuth } from "@hono/auth-js";
+import { eq } from "drizzle-orm";
+import { Hono } from "hono";
 
 import { checkIsActive } from "@/features/subscriptions/lib";
 
-import { stripe } from "@/lib/stripe";
 import { db } from "@/db/drizzle";
 import { subscriptions } from "@/db/schema";
 import { polar } from "@/lib/polar";
+import { handleWebhookPayload } from "@polar-sh/adapter-utils";
 import {
   validateEvent,
   WebhookVerificationError,
 } from "@polar-sh/sdk/webhooks.js";
-import { handleWebhookPayload } from "@polar-sh/adapter-utils";
-import { Webhooks } from "@polar-sh/nextjs";
 
 const app = new Hono()
   .post("/billing", verifyAuth(), async (c) => {
@@ -123,7 +120,6 @@ const app = new Hono()
     const webhookSecret = process.env.POLAR_WEBHOOK_SECRET!;
 
     const requestBody = await c.req.text();
-    console.log("requestBody", requestBody);
 
     const webhookHeaders = {
       "webhook-id": c.req.header("webhook-id") ?? "",
@@ -148,21 +144,19 @@ const app = new Hono()
 
     await handleWebhookPayload(webhookPayload, {
       webhookSecret,
-      onCheckoutUpdated: async (payload) => {
-        const subscription = await polar.subscriptions.get({
-          id: webhookPayload.data.id,
+      onOrderCreated: async (payload) => {
+        const { data } = payload;
+
+        await db.insert(subscriptions).values({
+          status: data.status,
+          userId: data.customer.metadata.userId as string,
+          subscriptionId: data.subscription?.id as string,
+          customerId: data.customer.id as string,
+          priceId: data.items[0].productPriceId as string,
+          currentPeriodEnd: data.subscription?.currentPeriodEnd,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         });
-        console.log(subscription);
-        // await db.insert(subscriptions).values({
-        //   status: payload.data.status,
-        //   userId: payload.data.customerMetadata.userId as string,
-        //   subscriptionId: payload.data.subscriptionId as string,
-        //   customerId: payload.data.customerId as string,
-        //   priceId: payload.data.productPriceId as string,
-        //   currentPeriodEnd: payload.data.expiresAt,
-        //   createdAt: new Date(),
-        //   updatedAt: new Date(),
-        // });
       },
       onOrderPaid: async (payload) => {
         await db
@@ -171,7 +165,7 @@ const app = new Hono()
             status: payload.data.status,
             updatedAt: new Date(),
           })
-          .where(eq(subscriptions.id, payload.data.subscriptionId as string));
+          .where(eq(subscriptions.subscriptionId, payload.data.subscriptionId as string));
       },
     });
 
