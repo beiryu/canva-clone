@@ -190,27 +190,20 @@ export const Editor = ({ initialData }: EditorProps) => {
         />
         <main className="bg-muted flex-1 overflow-auto relative flex flex-col">
           <ResizablePanelGroup direction="vertical" className="flex-1">
-            <ResizablePanel defaultSize={80} minSize={20}>
+            <ResizablePanel defaultSize={50} minSize={0}>
               <Toolbar
                 editor={editor}
                 activeTool={activeTool}
                 onChangeActiveTool={onChangeActiveTool}
                 key={JSON.stringify(editor?.canvas.getActiveObject())}
               />
-              <div
-                className="flex-1 h-[calc(100%-100px)] bg-muted"
-                ref={containerRef}
-              >
+              <div className="flex-1 h-[calc(90%)] bg-muted" ref={containerRef}>
                 <canvas ref={canvasRef} />
               </div>
-              <Footer editor={editor} />
+              {/* <Footer editor={editor} /> */}
             </ResizablePanel>
             <ResizableHandle withHandle />
-            <ResizablePanel
-              className="bg-black p-0"
-              defaultSize={50}
-              minSize={0}
-            >
+            <ResizablePanel className="bg-black p-0" minSize={0}>
               <ScrollArea className="h-full w-full">
                 <GeneratedImage />
               </ScrollArea>

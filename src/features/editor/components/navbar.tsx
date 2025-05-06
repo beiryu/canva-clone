@@ -8,9 +8,12 @@ import {
   ChevronDown,
   Download,
   Loader,
+  Minimize,
   MousePointerClick,
   Redo2,
   Undo2,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 
 import { UserButton } from "@/features/auth/components/user-button";
@@ -122,6 +125,37 @@ export const Navbar = ({
             onClick={() => editor?.onRedo()}
           >
             <Redo2 className="size-4" />
+          </Button>
+        </Hint>
+        <Separator orientation="vertical" className="mx-2" />
+        <Hint label="Zoom in" side="top" sideOffset={10}>
+          <Button
+            onClick={() => editor?.zoomIn()}
+            size="icon"
+            variant="ghost"
+            className="h-full"
+          >
+            <ZoomIn className="size-4" />
+          </Button>
+        </Hint>
+        <Hint label="Zoom out" side="top" sideOffset={10}>
+          <Button
+            onClick={() => editor?.zoomOut()}
+            size="icon"
+            variant="ghost"
+            className="h-full"
+          >
+            <ZoomOut className="size-4" />
+          </Button>
+        </Hint>
+        <Hint label="Reset" side="top" sideOffset={10}>
+          <Button
+            onClick={() => editor?.autoZoom()}
+            size="icon"
+            variant="ghost"
+            className="h-full"
+          >
+            <Minimize className="size-4" />
           </Button>
         </Hint>
         <Separator orientation="vertical" className="mx-2" />
