@@ -91,8 +91,9 @@ export const Banner = () => {
         <div className="flex-1 space-y-4">
           <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground leading-tight">
             Sketch to Thumbnail{" "}
-            <span className="text-primary">with AI Magic</span>
-          </h1>
+<span className="bg-clip-text text-transparent bg-gradient-to-r from-[#CCFF00] to-[#A0E9FF]">
+              with AI Magic
+            </span>          </h1>
 
           <p className="text-muted-foreground max-w-2xl">
             Draw your ideas with simple sketches in our canvas, and let AI

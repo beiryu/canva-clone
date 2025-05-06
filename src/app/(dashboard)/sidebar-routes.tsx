@@ -40,7 +40,7 @@ export const SidebarRoutes = () => {
               size="lg"
               effect="gooeyLeft"
             >
-              <Crown className="mr-2 size-4 fill-amber-400 text-amber-100 stroke-none" />
+              <Crown className="mr-2 !size-5 fill-amber-400 text-amber-600 stroke-orange-200" />
               Upgrade to Pro
             </Button>
           </div>
