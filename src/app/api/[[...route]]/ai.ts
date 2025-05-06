@@ -63,6 +63,63 @@ const app = new Hono()
 
       return c.json({ data: res[0] });
     },
+  )
+  .post(
+    "/generate-canvas-image",
+    verifyAuth(),
+    zValidator(
+      "json",
+      z.object({
+        canvasImage: z.string(), // Base64 encoded image from canvas
+        prompt: z.string().optional(),
+        enhancePrompt: z.boolean().optional(),
+        dimensions: z.string().optional(),
+        quality: z.string().optional(),
+        seed: z.string().optional(),
+      }),
+    ),
+    async (c) => {
+      const { canvasImage, prompt, enhancePrompt, dimensions, quality, seed } =
+        c.req.valid("json");
+
+      // Process the canvas image - we either use it directly or as inspiration
+      // For now, we'll use the prompt-based generation as a starting point
+      // and add the canvas image as a reference in the future
+
+      let enhancedPrompt = prompt || "Digital art";
+
+      if (enhancePrompt && prompt) {
+        // In real implementation, you might want to call another AI service
+        // to enhance the prompt based on the canvas content
+        enhancedPrompt = `${prompt}, detailed, high quality, artistic`;
+      }
+
+      // Set aspect ratio based on dimensions
+      let aspectRatio = "1:1"; // default square
+      if (dimensions) {
+        aspectRatio = dimensions;
+      }
+
+      const input = {
+        cfg: 3.5,
+        steps: quality === "hd" ? 35 : 28,
+        prompt: enhancedPrompt,
+        aspect_ratio: aspectRatio,
+        output_format: "webp",
+        output_quality: quality === "hd" ? 100 : 90,
+        negative_prompt: "ugly, deformed, blurry, low quality, low resolution",
+        prompt_strength: 0.85,
+        seed: seed ? parseInt(seed) : undefined,
+      };
+
+      const output = await replicate.run("stability-ai/stable-diffusion-3", {
+        input,
+      });
+
+      const res = output as Array<string>;
+
+      return c.json({ data: res[0] });
+    },
   );
 
 export default app;

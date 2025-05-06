@@ -207,7 +207,7 @@ export const Editor = ({ initialData }: EditorProps) => {
             <ResizableHandle withHandle />
             <ResizablePanel className="bg-black p-0" minSize={0}>
               <ScrollArea className="h-full w-full">
-                <GeneratedImage />
+                <GeneratedImage projectId={initialData.id} />
               </ScrollArea>
             </ResizablePanel>
           </ResizablePanelGroup>
@@ -221,6 +221,7 @@ export const Editor = ({ initialData }: EditorProps) => {
             editor={editor}
             isOpen={isGenerateSidebarOpen}
             onClose={() => setIsGenerateSidebarOpen(false)}
+            projectId={initialData.id}
           />
         </div>
       </div>

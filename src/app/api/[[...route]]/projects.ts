@@ -5,7 +5,7 @@ import { verifyAuth } from "@hono/auth-js";
 import { zValidator } from "@hono/zod-validator";
 
 import { db } from "@/db/drizzle";
-import { projects, projectsInsertSchema } from "@/db/schema";
+import { projects, projectsInsertSchema, generatedImages } from "@/db/schema";
 
 const app = new Hono()
   .get(
@@ -229,6 +229,136 @@ const app = new Hono()
       }
 
       return c.json({ data: data[0] });
+    },
+  )
+  // Get generated images for a project
+  .get(
+    "/:id/images",
+    verifyAuth(),
+    zValidator("param", z.object({ id: z.string() })),
+    async (c) => {
+      const auth = c.get("authUser");
+      const { id } = c.req.valid("param");
+
+      if (!auth.token?.id) {
+        return c.json({ error: "Unauthorized" }, 401);
+      }
+
+      // First verify the user owns the project
+      const projectData = await db
+        .select()
+        .from(projects)
+        .where(and(eq(projects.id, id), eq(projects.userId, auth.token.id)));
+
+      if (projectData.length === 0) {
+        return c.json({ error: "Project not found" }, 404);
+      }
+
+      // Get all generated images for this project
+      const images = await db
+        .select()
+        .from(generatedImages)
+        .where(eq(generatedImages.projectId, id))
+        .orderBy(desc(generatedImages.createdAt));
+
+      return c.json({ data: images });
+    },
+  )
+
+  // Save a generated image for a project
+  .post(
+    "/:id/images",
+    verifyAuth(),
+    zValidator("param", z.object({ id: z.string() })),
+    zValidator(
+      "json",
+      z.object({
+        url: z.string(),
+        prompt: z.string().optional(),
+      }),
+    ),
+    async (c) => {
+      const auth = c.get("authUser");
+      const { id } = c.req.valid("param");
+      const { url, prompt } = c.req.valid("json");
+
+      if (!auth.token?.id) {
+        return c.json({ error: "Unauthorized" }, 401);
+      }
+
+      // Verify the user owns the project
+      const projectData = await db
+        .select()
+        .from(projects)
+        .where(and(eq(projects.id, id), eq(projects.userId, auth.token.id)));
+
+      if (projectData.length === 0) {
+        return c.json({ error: "Project not found" }, 404);
+      }
+
+      // Save the generated image
+      const newImage = await db
+        .insert(generatedImages)
+        .values({
+          projectId: id,
+          url,
+          prompt: prompt || null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning();
+
+      return c.json({ data: newImage[0] });
+    },
+  )
+
+  // Delete a generated image
+  .delete(
+    "/:projectId/images/:imageId",
+    verifyAuth(),
+    zValidator(
+      "param",
+      z.object({
+        projectId: z.string(),
+        imageId: z.string(),
+      }),
+    ),
+    async (c) => {
+      const auth = c.get("authUser");
+      const { projectId, imageId } = c.req.valid("param");
+
+      if (!auth.token?.id) {
+        return c.json({ error: "Unauthorized" }, 401);
+      }
+
+      // Verify the user owns the project
+      const projectData = await db
+        .select()
+        .from(projects)
+        .where(
+          and(eq(projects.id, projectId), eq(projects.userId, auth.token.id)),
+        );
+
+      if (projectData.length === 0) {
+        return c.json({ error: "Project not found" }, 404);
+      }
+
+      // Delete the image
+      const deletedImage = await db
+        .delete(generatedImages)
+        .where(
+          and(
+            eq(generatedImages.id, imageId),
+            eq(generatedImages.projectId, projectId),
+          ),
+        )
+        .returning();
+
+      if (deletedImage.length === 0) {
+        return c.json({ error: "Image not found" }, 404);
+      }
+
+      return c.json({ data: { id: imageId } });
     },
   );
 

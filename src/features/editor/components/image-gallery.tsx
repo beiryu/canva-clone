@@ -5,11 +5,9 @@ import { AnimatePresence, motion } from "framer-motion";
 
 interface ImageGalleryProps {
   images: any[];
-  onDelete: (id: string) => void;
-  onRerun: (id: string) => void;
 }
 
-export function ImageGallery({ images, onDelete, onRerun }: ImageGalleryProps) {
+export function ImageGallery({ images }: ImageGalleryProps) {
   if (images.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 border border-dashed border-gray-700 rounded-lg">
@@ -32,11 +30,7 @@ export function ImageGallery({ images, onDelete, onRerun }: ImageGalleryProps) {
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
           >
-            <ImageCard
-              image={image}
-              onDelete={() => onDelete(image.id)}
-              onRerun={() => onRerun(image.id)}
-            />
+            <ImageCard image={image} />
           </motion.div>
         ))}
       </AnimatePresence>

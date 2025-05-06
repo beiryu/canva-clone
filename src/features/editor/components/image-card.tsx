@@ -10,16 +10,15 @@ import {
   Trash2,
   Edit,
   Download,
+  Save,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ImageCardProps {
   image: any;
-  onDelete: () => void;
-  onRerun: () => void;
 }
 
-export function ImageCard({ image, onDelete, onRerun }: ImageCardProps) {
+export function ImageCard({ image }: ImageCardProps) {
   return (
     <Card className="overflow-hidden bg-black border-card rounded-lg">
       <div className="flex flex-col md:flex-row">
@@ -60,7 +59,7 @@ export function ImageCard({ image, onDelete, onRerun }: ImageCardProps) {
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={onDelete}
+                // onClick={onDelete}
                 className="bg-red-600 hover:bg-red-700"
               >
                 <Trash2 className="mr-2 h-4 w-4" />
@@ -75,7 +74,7 @@ export function ImageCard({ image, onDelete, onRerun }: ImageCardProps) {
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={onRerun}
+                // onClick={onRerun}
                 disabled={image.status === "loading"}
                 className={cn(
                   "bg-black/50",
