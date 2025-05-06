@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Paintbrush } from "lucide-react";
-import { useVisualStyle } from "@/features/editor/store/use-style";
+import { useVisualStyle } from "@/features/editor/store/use-visual-style";
 
 export default function ImageStyles() {
   const { selectedStyle, setIsStyleDrawerOpen } = useVisualStyle();
@@ -13,7 +13,7 @@ export default function ImageStyles() {
         alt="Preview image"
         width={300}
         height={200}
-        className="w-full h-[150px] object-cover"
+        className="w-full h-[200px] object-cover"
       />
       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/50 flex flex-col justify-end p-4">
         <h3 className="text-xl font-bold text-yellow-300 uppercase">

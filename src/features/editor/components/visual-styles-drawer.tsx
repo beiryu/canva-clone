@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import {
   useVisualStyle,
   visualStyles,
-} from "@/features/editor/store/use-style";
+} from "@/features/editor/store/use-visual-style";
 
 export default function VisualStylesDrawer() {
   const {

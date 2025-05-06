@@ -3,6 +3,11 @@ import { persist } from "zustand/middleware";
 
 export const visualStyles: VisualStyle[] = [
   {
+    id: "nature",
+    name: "Nature",
+    image: "/styles-editor/nature.png",
+  },
+  {
     id: "3d-render",
     name: "3D Render",
     image: "/styles-editor/3d.png",
@@ -16,11 +21,6 @@ export const visualStyles: VisualStyle[] = [
     id: "fantasy",
     name: "Fantasy",
     image: "/styles-editor/fantasy.png",
-  },
-  {
-    id: "nature",
-    name: "Nature",
-    image: "/styles-editor/nature.png",
   },
   {
     id: "pixel",
