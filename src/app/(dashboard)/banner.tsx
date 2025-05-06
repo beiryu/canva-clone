@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { ArrowRight, Loader2, Sparkles, Wand2 } from "lucide-react";
+import { motion } from "framer-motion";
 
 import { useCreateProject } from "@/features/projects/api/use-create-project";
 
@@ -49,12 +50,41 @@ export const Banner = () => {
       <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-6 md:gap-10">
         {/* Icon */}
         <div className="flex-shrink-0">
-          <div className="relative flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-green-600/20 to-primary/20 backdrop-blur-sm border">
-            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-600/30 to-primary/30 blur-sm"></div>
-            <div className="relative flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-green-500 to-primary">
+          <motion.div
+            initial={{ y: 0 }}
+            animate={{
+              y: [-10, 0, -10],
+              boxShadow: [
+                "0 0 15px rgba(34, 197, 94, 0.2)",
+                "0 0 25px rgba(34, 197, 94, 0.4)",
+                "0 0 15px rgba(34, 197, 94, 0.2)",
+              ],
+            }}
+            transition={{
+              duration: 4,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            className="relative flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-green-600/20 to-primary/20 backdrop-blur-sm border"
+          >
+            <motion.div
+              initial={{ scale: 1 }}
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+              className="absolute inset-0 rounded-full bg-gradient-to-br from-green-600/30 to-primary/30 blur-sm"
+            />
+            <motion.div
+              whileHover={{ rotate: 360 }}
+              transition={{ duration: 0.5 }}
+              className="relative flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-green-500 to-primary"
+            >
               <Wand2 className="w-6 h-6 md:w-7 md:h-7 text-white" />
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </div>
 
         {/* Text content */}

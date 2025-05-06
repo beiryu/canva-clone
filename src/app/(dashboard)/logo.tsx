@@ -14,11 +14,9 @@ export const Logo = () => {
     <Link href="/">
       <div className="flex items-center gap-x-2 transition h-[68px] px-4">
         <div className="size-8 relative">
-          <Image src="/logo.png" alt="Sketch Thumbnail" fill />
+          <Image src="/logo.png" alt="SketchistAI" fill />
         </div>
-        <h1 className={cn(font.className, "text-xl font-bold")}>
-          Sketch Thumbnail
-        </h1>
+        <h1 className={cn(font.className, "text-xl font-bold")}>SketchistAI</h1>
       </div>
     </Link>
   );

@@ -36,8 +36,9 @@ export const SidebarRoutes = () => {
             <Button
               onClick={() => mutation.mutate()}
               disabled={mutation.isPending}
-              className="w-full rounded-xl border-none hover:opacity-75 transition"
+              className="w-full rounded-xl border-none"
               size="lg"
+              effect="gooeyLeft"
             >
               <Crown className="mr-2 size-4 fill-amber-400 text-amber-100 stroke-none" />
               Upgrade to Pro
