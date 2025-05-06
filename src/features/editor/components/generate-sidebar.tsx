@@ -145,6 +145,34 @@ const cacheHelpers = (queryClient: any, projectId: string) => {
       );
     },
 
+    // Smooth transition between loading and success
+    updateImageWithUrl: (
+      tempId: string,
+      imageUrl: string,
+      actualId: string,
+    ) => {
+      queryClient.setQueryData(
+        ["project-images", { projectId }],
+        (oldData: any) => {
+          if (oldData && Array.isArray(oldData)) {
+            const imageIndex = oldData.findIndex((img) => img.id === tempId);
+            if (imageIndex === -1) return oldData;
+
+            const updatedData = [...oldData];
+            updatedData[imageIndex] = {
+              ...updatedData[imageIndex],
+              id: actualId,
+              url: imageUrl,
+              status: "success",
+            };
+
+            return updatedData;
+          }
+          return oldData;
+        },
+      );
+    },
+
     removeImage: (imageId: string) => {
       queryClient.setQueryData(
         ["project-images", { projectId }],
@@ -233,8 +261,11 @@ export const GenerateSidebar = ({
             prompt: formData.prompt,
           },
           {
-            onSuccess: () => {
-              toast.success("Image generated and saved successfully!");
+            onSuccess: (data) => {
+              if (data && data.data && data.data.id) {
+                cache.updateImageWithUrl(tempId, result.data, data.data.id);
+                toast.success("Image generated and saved successfully!");
+              }
             },
             onSettled: () => {
               cache.removeImage(tempId);

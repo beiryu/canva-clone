@@ -40,12 +40,14 @@ export function ImageCard({ image }: ImageCardProps) {
           )}
 
           {image.status === "success" && (
-            <Image
-              src={image.imageUrl || "/placeholder.svg"}
-              alt={image.prompt || "Generated image"}
-              fill
-              className="object-cover"
-            />
+            <div className="w-full h-full transition-opacity duration-300 ease-in-out">
+              <Image
+                src={image.imageUrl || "/placeholder.svg"}
+                alt={image.prompt || "Generated image"}
+                fill
+                className="object-cover"
+              />
+            </div>
           )}
 
           {image.status === "error" && (

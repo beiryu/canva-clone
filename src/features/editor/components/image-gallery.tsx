@@ -21,14 +21,18 @@ export function ImageGallery({ images }: ImageGalleryProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      <AnimatePresence>
+      <AnimatePresence mode="popLayout">
         {images.map((image) => (
           <motion.div
             key={image.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
+            transition={{
+              duration: 0.4,
+              ease: "easeInOut",
+            }}
+            layout
           >
             <ImageCard image={image} />
           </motion.div>
