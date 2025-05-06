@@ -112,7 +112,7 @@ export type ActiveTool =
 
 export const FILL_COLOR = "rgb(214, 255, 58, 1)";
 export const STROKE_COLOR = "rgba(214, 255, 58, 1)";
-export const STROKE_WIDTH = 2;
+export const STROKE_WIDTH = 15;
 export const STROKE_DASH_ARRAY = [];
 export const FONT_FAMILY = "Arial";
 export const FONT_SIZE = 32;

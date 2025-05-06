@@ -28,6 +28,7 @@ import { TemplateSidebar } from "@/features/editor/components/template-sidebar";
 import { RemoveBgSidebar } from "@/features/editor/components/remove-bg-sidebar";
 import { SettingsSidebar } from "@/features/editor/components/settings-sidebar";
 import { GenerateSidebar } from "./generate-sidebar";
+import { MagicWandButton } from "./magic-wand-button";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -52,6 +53,7 @@ export const Editor = ({ initialData }: EditorProps) => {
   );
 
   const [activeTool, setActiveTool] = useState<ActiveTool>("select");
+  const [isGenerateSidebarOpen, setIsGenerateSidebarOpen] = useState(true);
 
   const onClearSelection = useCallback(() => {
     if (selectionDependentTools.includes(activeTool)) {
@@ -210,7 +212,17 @@ export const Editor = ({ initialData }: EditorProps) => {
             </ResizablePanel>
           </ResizablePanelGroup>
         </main>
-        <GenerateSidebar editor={editor} />
+
+        {!isGenerateSidebarOpen && (
+          <MagicWandButton onClick={() => setIsGenerateSidebarOpen(true)} />
+        )}
+        <div className="h-full">
+          <GenerateSidebar
+            editor={editor}
+            isOpen={isGenerateSidebarOpen}
+            onClose={() => setIsGenerateSidebarOpen(false)}
+          />
+        </div>
       </div>
     </div>
   );
