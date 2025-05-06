@@ -14,7 +14,6 @@ import { Info, Wand2, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ImageStyles from "./image-styles";
 import VisualStylesDrawer from "./visual-styles-drawer";
-import { useStyleStore } from "@/features/editor/stores/use-style-store";
 import { Label } from "@/components/ui/label";
 import {
   Tooltip,

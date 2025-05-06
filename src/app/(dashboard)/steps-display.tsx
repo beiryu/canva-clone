@@ -4,21 +4,21 @@ export default function StepsDisplay() {
   const steps = [
     {
       number: "01",
-      image: "/step-1.png",
+      image: "/steps-display/step-1.png",
       title: "Sketch",
       description:
         "Draw your ideas with our simple sketch tools. Express your creativity through basic shapes and lines.",
     },
     {
       number: "02",
-      image: "/step-2.png",
+      image: "/steps-display/step-2.png",
       title: "Generate",
       description:
         "Let AI transform your sketch into a professional thumbnail. Our AI understands your vision and adds professional polish.",
     },
     {
       number: "03",
-      image: "/step-3.png",
+      image: "/steps-display/step-3.png",
       title: "Edit",
       description:
         "Fine-tune your thumbnail with our editor. Adjust colors, add text, and apply effects to perfect your design.",
