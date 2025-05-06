@@ -16,10 +16,11 @@ export const Logo = () => {
         <div className="size-8 relative">
           <Image src="/logo.png" alt="SketchistAI" fill />
         </div>
-        <h1 className={cn(font.className, "text-xl font-bold")}>Sketchist
+        <h1 className={cn(font.className, "text-xl font-bold")}>
+          Sketchist
           <span className="font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#CCFF00] to-[#A0E9FF]">
-                AI
-              </span>
+            AI
+          </span>
         </h1>
       </div>
     </Link>
