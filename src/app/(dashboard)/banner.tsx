@@ -1,22 +1,20 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ArrowRight, Loader2, Sparkles, Wand2 } from "lucide-react";
+import { ArrowRight, Loader2, Wand2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { useCreateProject } from "@/features/projects/api/use-create-project";
 
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { useState } from "react";
 
 export const Banner = () => {
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
+
   const mutation = useCreateProject();
 
   const onClick = () => {
-    setLoading(true);
     mutation.mutate(
       {
         name: "Untitled project",
@@ -110,8 +108,8 @@ export const Banner = () => {
               className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-lg"
             >
               Start Creating Thumbnail{" "}
-              {loading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {mutation.isPending ? (
+                <Loader2 className="mx-2 h-4 w-4 animate-spin" />
               ) : (
                 <ArrowRight className="ml-2 h-4 w-4" />
               )}

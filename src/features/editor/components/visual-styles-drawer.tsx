@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
 import { X } from "lucide-react";
 import {
@@ -64,8 +63,10 @@ export default function VisualStylesDrawer() {
                   <Image
                     src={style.image}
                     alt={style.name}
-                    width={250}
-                    height={250}
+                    width={500}
+                    height={500}
+                    quality={100}
+                    priority
                     className="w-full aspect-square object-cover transition-transform duration-300 group-hover:scale-125"
                   />
                   {/* Style Name Overlay - Always Visible with Hover Effect */}
