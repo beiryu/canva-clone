@@ -1,6 +1,6 @@
-import { uuid } from "uuidv4";
 import { fabric } from "fabric";
 import type { RGBColor } from "react-color";
+import { uuid } from "uuidv4";
 
 export function transformText(objects: any) {
   if (!objects) return;
@@ -140,4 +140,22 @@ export const createFilter = (value: string) => {
   }
 
   return effect;
+};
+
+export const parseDimensionsString = (
+  dimensionsStr: string,
+): { width?: number; height?: number } => {
+  try {
+    const [widthRatio, heightRatio] = dimensionsStr.split(":").map(Number);
+
+    // Simple representation - not actual pixel values
+    // We just want to preserve the ratio information
+    return {
+      width: widthRatio,
+      height: heightRatio,
+    };
+  } catch (e) {
+    console.error("Error parsing dimensions:", e);
+    return {};
+  }
 };

@@ -1,11 +1,16 @@
-import { z } from "zod";
-import { Hono } from "hono";
-import { eq, and, desc, asc } from "drizzle-orm";
 import { verifyAuth } from "@hono/auth-js";
 import { zValidator } from "@hono/zod-validator";
+import { and, asc, desc, eq } from "drizzle-orm";
+import { Hono } from "hono";
+import { z } from "zod";
 
 import { db } from "@/db/drizzle";
-import { projects, projectsInsertSchema, generatedImages } from "@/db/schema";
+import {
+  generatedImages,
+  generatedImagesInsertSchema,
+  projects,
+  projectsInsertSchema,
+} from "@/db/schema";
 
 const app = new Hono()
   .get(
@@ -272,15 +277,34 @@ const app = new Hono()
     zValidator("param", z.object({ id: z.string() })),
     zValidator(
       "json",
-      z.object({
-        url: z.string(),
-        prompt: z.string().optional(),
-      }),
+      generatedImagesInsertSchema
+        .pick({
+          url: true,
+          prompt: true,
+          style: true,
+          settings: true,
+        })
+        .extend({
+          settings: z
+            .object({
+              model: z.string().optional(),
+              dimensions: z
+                .object({
+                  width: z.number().optional(),
+                  height: z.number().optional(),
+                })
+                .optional(),
+              quality: z.string().optional(),
+              seed: z.number().optional(),
+            })
+            .optional()
+            .transform((val) => val || {}),
+        }),
     ),
     async (c) => {
       const auth = c.get("authUser");
       const { id } = c.req.valid("param");
-      const { url, prompt } = c.req.valid("json");
+      const { url, prompt, style, settings } = c.req.valid("json");
 
       if (!auth.token?.id) {
         return c.json({ error: "Unauthorized" }, 401);
@@ -302,7 +326,9 @@ const app = new Hono()
         .values({
           projectId: id,
           url,
-          prompt: prompt || null,
+          prompt,
+          style,
+          settings,
           createdAt: new Date(),
           updatedAt: new Date(),
         })

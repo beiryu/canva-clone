@@ -3,22 +3,17 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  RefreshCcw,
-  Settings,
-  EyeOff,
-  Trash2,
-  Edit,
-  Download,
-  Save,
-} from "lucide-react";
+import { EyeOff, Trash2, Edit, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { visualStyles } from "../store/use-visual-style";
 
 interface ImageCardProps {
   image: any;
 }
 
 export function ImageCard({ image }: ImageCardProps) {
+  const style = visualStyles.find((style) => style.id === image.style);
+
   return (
     <Card className="overflow-hidden bg-black border-card rounded-lg">
       <div className="flex flex-col md:flex-row">
@@ -39,13 +34,14 @@ export function ImageCard({ image }: ImageCardProps) {
             </div>
           )}
 
-          {image.status === "success" && (
+          {/* TODO: Add image status = success */}
+          {!image.status && (
             <div className="w-full h-full transition-opacity duration-300 ease-in-out">
               <Image
-                src={image.imageUrl || "/placeholder.svg"}
+                src={image.url || "/placeholder.svg"}
                 alt={image.prompt || "Generated image"}
                 fill
-                className="object-cover"
+                className="object-contain"
               />
             </div>
           )}
@@ -76,7 +72,6 @@ export function ImageCard({ image }: ImageCardProps) {
               <Button
                 variant="secondary"
                 size="sm"
-                // onClick={onRerun}
                 disabled={image.status === "loading"}
                 className={cn(
                   "bg-black/50",
@@ -84,9 +79,6 @@ export function ImageCard({ image }: ImageCardProps) {
                 )}
               >
                 <Edit className="h-4 w-4 mr-1" /> Edit
-              </Button>
-              <Button variant="secondary" size="sm" className="bg-black/50">
-                <Settings className="h-4 w-4" />
               </Button>
               <Button
                 variant="default"
@@ -99,23 +91,67 @@ export function ImageCard({ image }: ImageCardProps) {
           )}
         </div>
 
-        {/* Prompt and thumbnail */}
+        {/* Prompt, style, settings */}
         <div className="w-full md:w-1/4 p-4 bg-[#0a0a0a] flex flex-col justify-between">
-          <p className="text-sm text-gray-300 mb-4 line-clamp-[12]">
-            {image.prompt}
-          </p>
+          {/* Prompt */}
+          <div className="space-y-3">
+            {image.prompt && (
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Prompt</p>
+                <p className="text-sm text-gray-300 line-clamp-6">
+                  {image.prompt}
+                </p>
+              </div>
+            )}
 
-          {image.thumbnailUrl && (
-            <div className="self-end">
-              <Image
-                src={image.thumbnailUrl || "/placeholder.svg"}
-                alt="Thumbnail"
-                width={60}
-                height={60}
-                className="rounded-md border border-gray-700"
-              />
+            {/* Style */}
+            {style && (
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Style</p>
+                <Image
+                  src={style.image}
+                  alt={style.name}
+                  width={50}
+                  height={50}
+                  className="rounded-md"
+                />
+              </div>
+            )}
+
+            {/* Settings */}
+            <div>
+              <p className="text-xs text-gray-500 mb-1">Settings</p>
+              <div className="space-y-1">
+                {image.settings.model && (
+                  <p className="text-xs text-gray-400">
+                    Model: {image.settings.model}
+                  </p>
+                )}
+                {image.settings.dimensions && (
+                  <p className="text-xs text-gray-400">
+                    Dimensions: {image.settings.dimensions.width}×
+                    {image.settings.dimensions.height}
+                  </p>
+                )}
+                {image.settings.quality && (
+                  <p className="text-xs text-gray-400">
+                    Quality: {image.settings.quality}
+                  </p>
+                )}
+                {image.settings.seed !== undefined && (
+                  <p className="text-xs text-gray-400">
+                    Seed: {image.settings.seed}
+                  </p>
+                )}
+              </div>
             </div>
-          )}
+          </div>
+
+          <div className="mt-4">
+            <p className="text-xs text-gray-500">
+              {new Date(image.createdAt).toLocaleString()}
+            </p>
+          </div>
         </div>
       </div>
     </Card>

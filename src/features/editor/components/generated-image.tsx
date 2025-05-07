@@ -9,8 +9,7 @@ interface GeneratedImageProps {
 }
 
 export default function GeneratedImage({ projectId }: GeneratedImageProps) {
-  const { data: fetchedImages, isLoading } =
-    useProjectGeneratedImages(projectId);
+  const { data: images, isLoading } = useProjectGeneratedImages(projectId);
 
   if (isLoading) {
     return (
@@ -25,7 +24,7 @@ export default function GeneratedImage({ projectId }: GeneratedImageProps) {
     );
   }
 
-  if (!fetchedImages || fetchedImages.length === 0) {
+  if (!images || images.length === 0) {
     return (
       <main className="bg-black text-white p-4 md:p-8 h-full flex items-center justify-center">
         <div className="text-center max-w-md">
@@ -40,22 +39,10 @@ export default function GeneratedImage({ projectId }: GeneratedImageProps) {
     );
   }
 
-  // TODO: Map 1-1 with database
-  // Format images for the gallery
-  const formattedImages = fetchedImages.map((image: any) => ({
-    id: image.id,
-    status:
-      "status" in image && image.status === "loading" ? "loading" : "success",
-    prompt: image.prompt,
-    thumbnailUrl: image.url,
-    imageUrl: image.url,
-    createdAt: new Date(image.createdAt).toLocaleString(),
-  }));
-
   return (
     <main className="bg-black text-white p-4 md:p-8 h-full">
       <div className="max-w-6xl mx-auto">
-        <ImageGallery images={formattedImages} />
+        <ImageGallery images={images} />
       </div>
     </main>
   );

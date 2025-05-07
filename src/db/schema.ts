@@ -1,13 +1,14 @@
 import { relations } from "drizzle-orm";
-import { createInsertSchema } from "drizzle-zod";
 import {
   boolean,
-  timestamp,
-  pgTable,
-  text,
-  primaryKey,
   integer,
+  jsonb,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
 } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
 import type { AdapterAccountType } from "next-auth/adapters";
 
 export const users = pgTable("user", {
@@ -102,7 +103,7 @@ export const projects = pgTable("project", {
     .references(() => users.id, {
       onDelete: "cascade",
     }),
-  json: text("json").notNull(),
+  json: jsonb("json").notNull(),
   height: integer("height").notNull(),
   width: integer("width").notNull(),
   thumbnailUrl: text("thumbnailUrl"),
@@ -148,6 +149,8 @@ export const generatedImages = pgTable("generated_image", {
     .references(() => projects.id, { onDelete: "cascade" }),
   url: text("url").notNull(),
   prompt: text("prompt"),
+  style: text("style"),
+  settings: jsonb("settings").notNull(),
   createdAt: timestamp("createdAt", { mode: "date" }).notNull(),
   updatedAt: timestamp("updatedAt", { mode: "date" }).notNull(),
 });
@@ -161,3 +164,5 @@ export const generatedImagesRelations = relations(
     }),
   }),
 );
+
+export const generatedImagesInsertSchema = createInsertSchema(generatedImages);
