@@ -263,3 +263,42 @@ export interface Editor {
   getActiveStrokeDashArray: () => number[];
   selectedObjects: fabric.Object[];
 }
+
+export interface GenerateState {
+  formData: {
+    prompt: string;
+    enhancePrompt: boolean;
+    model: string;
+    aspectRatio: string;
+    quality: string;
+    numImages: number;
+    seed?: number;
+  };
+}
+
+export const INITIAL_GENERATE_STATE: GenerateState = {
+  formData: {
+    prompt:
+      "Artistic background with multiple overlapping characters, in an abstract or semi-abstract style",
+    enhancePrompt: false,
+    model: "flux-schnell",
+    aspectRatio: "1:1",
+    quality: "medium",
+    numImages: 1,
+    seed: undefined,
+  },
+};
+
+export const ASPECT_RATIO_OPTIONS = [
+  { value: "1:1", label: "1:1", description: "Square" },
+  { value: "2:3", label: "2:3", description: "Portrait" },
+  { value: "3:2", label: "3:2", description: "Landscape" },
+  { value: "4:3", label: "4:3", description: "Traditional TV/Monitor" },
+  { value: "3:4", label: "3:4", description: "Portrait Document" },
+  { value: "4:5", label: "4:5", description: "Tall Photo" },
+  { value: "5:4", label: "5:4", description: "Photo Print" },
+  { value: "16:9", label: "16:9", description: "HD Widescreen" },
+  { value: "9:16", label: "9:16", description: "Mobile/Story" },
+  { value: "21:9", label: "21:9", description: "Ultra Wide Cinema" },
+  { value: "9:21", label: "9:21", description: "Extra Tall Mobile" },
+];

@@ -142,20 +142,75 @@ export const createFilter = (value: string) => {
   return effect;
 };
 
-export const parseDimensionsString = (
-  dimensionsStr: string,
-): { width?: number; height?: number } => {
-  try {
-    const [widthRatio, heightRatio] = dimensionsStr.split(":").map(Number);
+export const cacheGenerateImage = (queryClient: any, projectId: string) => {
+  return {
+    addLoadingImage: (tempId: string, formData: any, style: string) => {
+      queryClient.setQueryData(
+        ["project-images", { projectId }],
+        (oldData: any) => {
+          const newLoadingImage = {
+            id: tempId,
+            projectId,
+            url: "",
+            prompt: formData.prompt,
+            style,
+            settings: {
+              model: formData.model,
+              aspectRatio: formData.aspectRatio,
+              quality: formData.quality,
+              seed: formData.seed ? parseInt(formData.seed) : undefined,
+            },
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            status: "loading",
+          };
 
-    // Simple representation - not actual pixel values
-    // We just want to preserve the ratio information
-    return {
-      width: widthRatio,
-      height: heightRatio,
-    };
-  } catch (e) {
-    console.error("Error parsing dimensions:", e);
-    return {};
-  }
+          if (oldData && Array.isArray(oldData)) {
+            return [newLoadingImage, ...oldData];
+          }
+          return [newLoadingImage];
+        },
+      );
+    },
+
+    // Smooth transition between loading and success
+    updateImageWithUrl: (
+      tempId: string,
+      imageUrl: string,
+      actualId: string,
+    ) => {
+      queryClient.setQueryData(
+        ["project-images", { projectId }],
+        (oldData: any) => {
+          if (oldData && Array.isArray(oldData)) {
+            const imageIndex = oldData.findIndex((img) => img.id === tempId);
+            if (imageIndex === -1) return oldData;
+
+            const updatedData = [...oldData];
+            updatedData[imageIndex] = {
+              ...updatedData[imageIndex],
+              id: actualId,
+              url: imageUrl,
+              status: "success",
+            };
+
+            return updatedData;
+          }
+          return oldData;
+        },
+      );
+    },
+
+    removeImage: (imageId: string) => {
+      queryClient.setQueryData(
+        ["project-images", { projectId }],
+        (oldData: any) => {
+          if (oldData && Array.isArray(oldData)) {
+            return oldData.filter((img: any) => img.id !== imageId);
+          }
+          return oldData;
+        },
+      );
+    },
+  };
 };

@@ -3,6 +3,12 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { z } from "zod";
 
+import { AgentManager } from "@/features/agents/agent-manager";
+import {
+  ImageAspectRatio,
+  ImageGenerationModel,
+  ImageQuality,
+} from "@/features/agents/types";
 import { replicate } from "@/lib/replicate";
 
 const app = new Hono()
@@ -73,13 +79,13 @@ const app = new Hono()
         canvasImage: z.string(), // Base64 encoded image from canvas
         prompt: z.string().optional(),
         enhancePrompt: z.boolean().optional(),
-        dimensions: z.string().optional(),
+        aspectRatio: z.string().optional(),
         quality: z.string().optional(),
         seed: z.string().optional(),
       }),
     ),
     async (c) => {
-      const { canvasImage, prompt, enhancePrompt, dimensions, quality, seed } =
+      const { canvasImage, prompt, enhancePrompt, aspectRatio, quality, seed } =
         c.req.valid("json");
 
       // Process the canvas image - we either use it directly or as inspiration
@@ -92,12 +98,6 @@ const app = new Hono()
         // In real implementation, you might want to call another AI service
         // to enhance the prompt based on the canvas content
         enhancedPrompt = `${prompt}, detailed, high quality, artistic`;
-      }
-
-      // Set aspect ratio based on dimensions
-      let aspectRatio = "1:1"; // default square
-      if (dimensions) {
-        aspectRatio = dimensions;
       }
 
       const input = {
@@ -119,6 +119,53 @@ const app = new Hono()
       const res = output as Array<string>;
 
       return c.json({ data: res[0] });
+    },
+  )
+  .post(
+    "/agent-generate-image",
+    verifyAuth(),
+    zValidator(
+      "json",
+      z.object({
+        prompt: z.string(),
+        model: z.string(),
+        canvasImage: z.string().optional(),
+        enhancePrompt: z.boolean().optional(),
+        aspectRatio: z.string().optional(),
+        quality: z.string().optional(),
+        seed: z.number().optional(),
+      }),
+    ),
+    async (c) => {
+      const {
+        prompt,
+        model,
+        canvasImage,
+        enhancePrompt,
+        aspectRatio,
+        quality,
+        seed,
+      } = c.req.valid("json");
+
+      // Initialize the agent manager with API keys from env
+      const agentManager = new AgentManager();
+
+      try {
+        const result = await agentManager.generateImage({
+          prompt,
+          model: model as ImageGenerationModel,
+          canvasImage,
+          enhancePrompt,
+          aspectRatio: aspectRatio as ImageAspectRatio,
+          quality: quality as ImageQuality,
+          seed: seed,
+        });
+
+        return c.json({ data: result.url });
+      } catch (error) {
+        console.error("Image generation error:", error);
+        return c.json({ error: "Failed to generate image" }, 500);
+      }
     },
   );
 

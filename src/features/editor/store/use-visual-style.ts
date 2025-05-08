@@ -62,6 +62,16 @@ export const useVisualStyle = create<VisualStyleState>()(
     }),
     {
       name: "style-storage",
+      merge: (persistedState, currentState) => {
+        // Cast to partial state to handle type correctly
+        const state = persistedState as Partial<VisualStyleState>;
+        return {
+          ...currentState,
+          ...state,
+          // Ensure selectedStyle is never null by using the default if persisted value is null
+          selectedStyle: state.selectedStyle || currentState.selectedStyle,
+        };
+      },
     },
   ),
 );

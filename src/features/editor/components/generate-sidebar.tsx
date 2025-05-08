@@ -1,5 +1,10 @@
 import { useCallback, useReducer } from "react";
-import { Editor } from "@/features/editor/types";
+import {
+  ASPECT_RATIO_OPTIONS,
+  Editor,
+  GenerateState,
+  INITIAL_GENERATE_STATE,
+} from "@/features/editor/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -37,7 +42,14 @@ import { useGenerateCanvasImage } from "@/features/ai/api/use-generate-canvas-im
 import { useSaveGeneratedImage } from "@/features/projects/api/use-save-generated-image";
 import { useQueryClient } from "@tanstack/react-query";
 import { useVisualStyle } from "@/features/editor/store/use-visual-style";
-import { parseDimensionsString } from "../utils";
+import { useAgentGenerateImage } from "@/features/ai/api/use-agent-generate-image";
+import { modelRegistry } from "@/features/agents/models";
+import {
+  ImageAspectRatio,
+  ImageGenerationModel,
+} from "@/features/agents/types";
+import { cacheGenerateImage } from "../utils";
+import { getModelsByCapability } from "@/features/agents/utilts";
 
 interface GenerateSidebarProps {
   editor: Editor | undefined;
@@ -45,59 +57,6 @@ interface GenerateSidebarProps {
   onClose: () => void;
   projectId: string;
 }
-
-const models = [
-  {
-    value: "higgsfield",
-    label: "Higgsfield",
-    description: "Standard speed, standard queue",
-  },
-  {
-    value: "gpt",
-    label: "GPT Image",
-    description: "Faster speed, priority queue",
-  },
-];
-
-const dimensionOptions = [
-  { value: "1:1", label: "Square - 1024×1024" },
-  { value: "16:9", label: "Landscape - 1792×1024" },
-  { value: "9:16", label: "Portrait - 1024×1792" },
-  { value: "4:3", label: "Standard - 1344×1024" },
-  { value: "3:4", label: "Standard Portrait - 1024×1344" },
-];
-
-const qualityOptions = [
-  { value: "standard", label: "Standard" },
-  { value: "hd", label: "HD" },
-];
-
-// State type definition
-interface GenerateState {
-  formData: {
-    prompt: string;
-    enhancePrompt: boolean;
-    model: string;
-    dimensions: string;
-    quality: string;
-    numImages: number;
-    seed: string;
-  };
-}
-
-// Initial state
-const initialState: GenerateState = {
-  formData: {
-    prompt:
-      "Artistic background with multiple overlapping characters, in an abstract or semi-abstract style",
-    enhancePrompt: false,
-    model: "gpt",
-    dimensions: "1:1",
-    quality: "standard",
-    numImages: 1,
-    seed: "",
-  },
-};
 
 // Action type
 type FormAction = {
@@ -122,80 +81,6 @@ const reducer = (state: GenerateState, action: FormAction): GenerateState => {
   }
 };
 
-// Helper functions for managing cache
-const cacheHelpers = (queryClient: any, projectId: string) => {
-  return {
-    addLoadingImage: (tempId: string, formData: any, style: string) => {
-      queryClient.setQueryData(
-        ["project-images", { projectId }],
-        (oldData: any) => {
-          const newLoadingImage = {
-            id: tempId,
-            projectId,
-            url: "",
-            prompt: formData.prompt,
-            style,
-            settings: {
-              model: formData.model,
-              dimensions: parseDimensionsString(formData.dimensions),
-              quality: formData.quality,
-              seed: formData.seed ? parseInt(formData.seed) : undefined,
-            },
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            status: "loading",
-          };
-
-          if (oldData && Array.isArray(oldData)) {
-            return [newLoadingImage, ...oldData];
-          }
-          return [newLoadingImage];
-        },
-      );
-    },
-
-    // Smooth transition between loading and success
-    updateImageWithUrl: (
-      tempId: string,
-      imageUrl: string,
-      actualId: string,
-    ) => {
-      queryClient.setQueryData(
-        ["project-images", { projectId }],
-        (oldData: any) => {
-          if (oldData && Array.isArray(oldData)) {
-            const imageIndex = oldData.findIndex((img) => img.id === tempId);
-            if (imageIndex === -1) return oldData;
-
-            const updatedData = [...oldData];
-            updatedData[imageIndex] = {
-              ...updatedData[imageIndex],
-              id: actualId,
-              url: imageUrl,
-              status: "success",
-            };
-
-            return updatedData;
-          }
-          return oldData;
-        },
-      );
-    },
-
-    removeImage: (imageId: string) => {
-      queryClient.setQueryData(
-        ["project-images", { projectId }],
-        (oldData: any) => {
-          if (oldData && Array.isArray(oldData)) {
-            return oldData.filter((img: any) => img.id !== imageId);
-          }
-          return oldData;
-        },
-      );
-    },
-  };
-};
-
 export const GenerateSidebar = ({
   editor,
   isOpen,
@@ -208,16 +93,31 @@ export const GenerateSidebar = ({
 
   const { selectedStyle } = useVisualStyle();
 
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const [state, dispatch] = useReducer(reducer, INITIAL_GENERATE_STATE);
 
   const { formData } = state;
 
   const queryClient = useQueryClient();
 
-  const cache = cacheHelpers(queryClient, projectId);
+  const cache = cacheGenerateImage(queryClient, projectId);
 
   const generateImage = useGenerateCanvasImage();
   const saveImage = useSaveGeneratedImage(projectId);
+  const agentGenerateImage = useAgentGenerateImage();
+
+  // Get model params based on selected model
+  const getModelParams = useCallback(() => {
+    const model = formData.model as ImageGenerationModel;
+    return (
+      modelRegistry.get(model)?.params || {
+        supportsSeed: true,
+        quality: ["low", "medium", "high"],
+        aspectRatio: ["1:1", "3:2", "2:3"],
+      }
+    );
+  }, [formData.model]);
+
+  const modelParams = getModelParams();
 
   const handleFormChange = (
     field: keyof GenerateState["formData"],
@@ -248,73 +148,65 @@ export const GenerateSidebar = ({
         quality: 1,
       });
 
-      if (!canvasImage) {
-        toast.error("Failed to capture canvas");
-        setIsGenerating(false);
-        cache.removeImage(tempId);
-        return;
-      }
-
-      const result = await generateImage.mutateAsync({
-        canvasImage,
+      // Use the agent-based image generation
+      const response = await agentGenerateImage.mutateAsync({
         prompt: formData.prompt,
+        model: formData.model,
+        canvasImage: canvasImage,
         enhancePrompt: formData.enhancePrompt,
-        dimensions: formData.dimensions,
+        aspectRatio: formData.aspectRatio,
         quality: formData.quality,
-        seed: useSeed ? formData.seed : undefined,
+        seed: formData.seed,
       });
 
-      if (result.data) {
-        // Save the generated image
-        await saveImage.mutateAsync(
-          {
-            url: result.data,
-            prompt: formData.prompt,
-            style: selectedStyle.id,
-            settings: {
-              model: formData.model,
-              dimensions: parseDimensionsString(formData.dimensions),
-              quality: formData.quality,
-              seed: useSeed ? parseInt(formData.seed) : undefined,
-            },
-          },
-          {
-            onSuccess: (data) => {
-              if (data && data.data && data.data.id) {
-                cache.updateImageWithUrl(tempId, result.data, data.data.id);
-                toast.success("Image generated and saved successfully!");
-              }
-            },
-            onSettled: () => {
-              cache.removeImage(tempId);
-            },
-          },
-        );
-      } else {
-        cache.removeImage(tempId);
-        toast.error("Failed to generate image");
+      // Check if response has data property
+      if (
+        !response ||
+        !("data" in response) ||
+        typeof response.data !== "string"
+      ) {
+        throw new Error("Invalid response from image generation");
       }
-    } catch (error) {
-      console.error("Generation error:", error);
-      toast.error("Error generating image");
 
-      // Remove the temporary loading image on error
+      const imageUrl = response.data;
+
+      // Save the generated image
+      const savedImageResponse = await saveImage.mutateAsync({
+        url: imageUrl,
+        prompt: formData.prompt,
+        style: selectedStyle.id,
+        settings: {
+          model: formData.model,
+          aspectRatio: formData.aspectRatio,
+          quality: formData.quality,
+          seed: formData.seed,
+        },
+      });
+
+      // Update the UI with the new image
+      if (savedImageResponse.data) {
+        cache.updateImageWithUrl(tempId, imageUrl, savedImageResponse.data.id);
+      }
+
+      setIsGenerating(false);
+      onClose();
+    } catch (error) {
+      console.error("Error generating image:", error);
+      toast.error("Failed to generate image. Please try again.");
       if (tempImageId) {
         cache.removeImage(tempImageId);
       }
-    } finally {
       setIsGenerating(false);
-      setTempImageId(null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     editor,
     formData,
-    generateImage,
-    saveImage,
     tempImageId,
+    agentGenerateImage,
+    saveImage,
     cache,
-    useSeed,
-    selectedStyle,
+    onClose,
   ]);
 
   return (
@@ -370,8 +262,8 @@ export const GenerateSidebar = ({
                       </TooltipTrigger>
                       <TooltipContent className="bg-gray-800 text-white border-gray-700">
                         <p className="max-w-xs">
-                          Let AI refine your prompt for more creative and detailed
-                          images.
+                          Let AI refine your prompt for more creative and
+                          detailed images.
                         </p>
                       </TooltipContent>
                     </Tooltip>
@@ -409,70 +301,110 @@ export const GenerateSidebar = ({
                       Select model
                     </div>
                     <div className="flex flex-col gap-2">
-                      {models.map((model) => (
-                        <SelectItem
-                          key={model.value}
-                          value={model.value}
-                          className={cn(
-                            "group flex items-center gap-4 rounded-lg px-4 py-3",
-                            "data-[state=checked]:border data-[state=checked]:border-accent",
-                          )}
-                        >
-                          <div className="flex items-center gap-4 w-full">
-                            <div className="flex flex-col flex-1 items-start">
-                              <span className="font-medium">{model.label}</span>
-                              <span className="text-xs font-light italic">
-                                {model.description}
-                              </span>
+                      {getModelsByCapability("image-generation").map(
+                        (model) => (
+                          <SelectItem
+                            key={model.id}
+                            value={model.id!}
+                            className={cn(
+                              "group flex items-center gap-4 rounded-lg px-4 py-3",
+                            )}
+                          >
+                            <div className="flex items-center gap-4 w-full">
+                              <div className="flex flex-col flex-1 items-start">
+                                <span className="font-medium">
+                                  {model.name}
+                                </span>
+                                <span className="text-xs font-light italic">
+                                  {model.description}
+                                </span>
+                              </div>
                             </div>
-                          </div>
-                        </SelectItem>
-                      ))}
+                          </SelectItem>
+                        ),
+                      )}
                     </div>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            {/* Dimensions Selection */}
+            {/* Aspect Ratio Selection */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Dimensions</Label>
+              <Label className="text-sm font-medium">Aspect Ratio</Label>
               <Select
-                value={formData.dimensions}
-                onValueChange={(value) => handleFormChange("dimensions", value)}
+                value={formData.aspectRatio}
+                onValueChange={(value) =>
+                  handleFormChange("aspectRatio", value)
+                }
               >
                 <SelectTrigger className="bg-muted border">
-                  <SelectValue placeholder="Select dimensions" />
+                  <SelectValue placeholder="Select aspect ratio" />
                 </SelectTrigger>
-                <SelectContent className="bg-black">
-                  {dimensionOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
+                <SelectContent className="bg-black p-4 rounded-xl">
+                  <div className="px-2 pb-2 text-muted-foreground text-sm font-medium">
+                    Select aspect ratio
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {ASPECT_RATIO_OPTIONS.filter((ratio) =>
+                      modelParams.aspectRatio?.includes(ratio.value),
+                    ).map((ratio) => (
+                      <SelectItem
+                        key={ratio.value}
+                        value={ratio.value}
+                        className={cn(
+                          "group flex items-center gap-4 rounded-lg px-4 py-2",
+                        )}
+                      >
+                        <div className="flex items-center gap-3 w-full">
+                          <div className="basis-2/3 flex items-center">
+                            <span className="font-medium mr-2">
+                              {ratio.label}
+                            </span>
+                            {ratio.description && (
+                              <p className="text-muted-foreground">
+                                ({ratio.description})
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </div>
                 </SelectContent>
               </Select>
             </div>
 
             {/* Quality Selection */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Quality</Label>
-              <Select
-                value={formData.quality}
-                onValueChange={(value) => handleFormChange("quality", value)}
-              >
-                <SelectTrigger className="bg-muted border">
-                  <SelectValue placeholder="Select quality" />
-                </SelectTrigger>
-                <SelectContent className="bg-black">
-                  {qualityOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {modelParams.quality && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Quality</Label>
+                <Select
+                  value={formData.quality}
+                  onValueChange={(value) => handleFormChange("quality", value)}
+                >
+                  <SelectTrigger className="bg-muted border">
+                    <SelectValue placeholder="Select quality" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-black p-4 rounded-xl">
+                    <div className="px-2 pb-2 text-muted-foreground text-sm font-medium">
+                      Select quality
+                    </div>
+                    {modelParams.quality?.map((option: string) => (
+                      <SelectItem
+                        key={option}
+                        value={option}
+                        className={cn(
+                          "group flex items-center gap-4 rounded-lg px-4 py-2",
+                        )}
+                      >
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Number of Images Slider */}
             <div className="space-y-2">
@@ -485,7 +417,9 @@ export const GenerateSidebar = ({
                 max={4}
                 step={1}
                 value={[formData.numImages]}
-                onValueChange={(value) => handleFormChange("numImages", value[0])}
+                onValueChange={(value) =>
+                  handleFormChange("numImages", value[0])
+                }
                 className="py-2"
               />
             </div>
@@ -498,42 +432,50 @@ export const GenerateSidebar = ({
                 <AccordionContent>
                   <div className="space-y-4 py-2">
                     {/* Seed Option */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="use-seed" className="text-sm font-medium">
-                          Use Seed
-                        </Label>
-                        <Switch
-                          id="use-seed"
-                          checked={useSeed}
-                          onCheckedChange={setUseSeed}
-                          className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-secondary-foreground/50"
-                        />
-                      </div>
-                      {useSeed && (
-                        <div className="px-1">
-                          <Input
-                            type="number"
-                            placeholder="Enter seed (optional)"
-                            value={formData.seed}
-                            onChange={(e) =>
-                              handleFormChange("seed", e.target.value)
-                            }
-                            className="bg-[#1a1a1a] border-gray-800"
+                    {modelParams.supportsSeed && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <Label
+                            htmlFor="use-seed"
+                            className="text-sm font-medium"
+                          >
+                            Use Seed
+                          </Label>
+                          <Switch
+                            id="use-seed"
+                            checked={useSeed}
+                            onCheckedChange={setUseSeed}
+                            className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-secondary-foreground/50"
                           />
-                          <p className="text-xs text-muted-foreground m-1">
-                            Using the same seed produces similar results
-                          </p>
                         </div>
-                      )}
-                    </div>
+                        {useSeed && (
+                          <div className="px-1">
+                            <Input
+                              type="number"
+                              placeholder="Enter seed (optional)"
+                              value={formData.seed}
+                              onChange={(e) =>
+                                handleFormChange(
+                                  "seed",
+                                  parseInt(e.target.value),
+                                )
+                              }
+                              className="bg-[#1a1a1a] border-gray-800"
+                            />
+                            <p className="text-xs text-muted-foreground m-1">
+                              Using the same seed produces similar results
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
           </div>
         </ScrollArea>
-        
+
         <div className="absolute bottom-0 left-0 right-0 p-4 bg-black border-t border-gray-800">
           <Button
             className="w-full"

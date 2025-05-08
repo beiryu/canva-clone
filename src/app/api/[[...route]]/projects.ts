@@ -288,12 +288,7 @@ const app = new Hono()
           settings: z
             .object({
               model: z.string().optional(),
-              dimensions: z
-                .object({
-                  width: z.number().optional(),
-                  height: z.number().optional(),
-                })
-                .optional(),
+              aspectRatio: z.string().optional(),
               quality: z.string().optional(),
               seed: z.number().optional(),
             })

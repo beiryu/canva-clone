@@ -127,10 +127,9 @@ export function ImageCard({ image }: ImageCardProps) {
                     Model: {image.settings.model}
                   </p>
                 )}
-                {image.settings.dimensions && (
+                {image.settings.aspectRatio && (
                   <p className="text-xs text-gray-400">
-                    Dimensions: {image.settings.dimensions.width}×
-                    {image.settings.dimensions.height}
+                    Aspect Ratio: {image.settings.aspectRatio}
                   </p>
                 )}
                 {image.settings.quality && (
