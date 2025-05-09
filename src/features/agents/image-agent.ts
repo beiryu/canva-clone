@@ -19,10 +19,10 @@ export class ImageAgent {
   async generateImage(
     options: ImageGenerationOptions,
   ): Promise<ImageGenerationResult> {
-    const modelConfig = modelRegistry.get(options.settings.model);
+    const modelConfig = modelRegistry.get(options.model);
 
     if (!modelConfig) {
-      throw new Error(`Model ${options.settings.model} not found in registry`);
+      throw new Error(`Model ${options.model} not found in registry`);
     }
 
     const provider = this.providers.get(modelConfig.provider);
@@ -33,12 +33,12 @@ export class ImageAgent {
 
     try {
       // Get the appropriate model handler from the provider
-      const modelHandler = provider.getModelHandler(options.settings.model);
+      const modelHandler = provider.getModelHandler(options.model);
 
       // Ensure the handler implements ImageGenerationHandler
       if (!this.isImageGenerationHandler(modelHandler)) {
         throw new Error(
-          `Model ${options.settings.model} does not support image generation`,
+          `Model ${options.model} does not support image generation`,
         );
       }
 
@@ -46,7 +46,7 @@ export class ImageAgent {
       return modelHandler.generateImage(options);
     } catch (error) {
       console.error(
-        `Error generating image with model ${options.settings.model}:`,
+        `Error generating image with model ${options.model}:`,
         error,
       );
       throw error;

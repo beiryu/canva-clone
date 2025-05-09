@@ -27,22 +27,23 @@ class GPTImageHandler
 
     const { aspectRatio = "1:1", quality = "high" } = settings;
 
-    const size = this.mapAspectRatioToSize(aspectRatio);
-
     try {
-      const response = await openai.images.generate({
+      const input = {
         model: "gpt-image-1",
         prompt: prompt,
-        n: 1,
-        size: size as any,
+        size: this.mapAspectRatioToSize(aspectRatio),
         quality: this.mapQuality(quality),
-      });
+      };
+
+      console.log("Generating image with GPT-Image-1", input);
+
+      const response = await openai.images.generate(input);
 
       if (!response || !response.data || response.data.length === 0) {
         throw new Error("Invalid response format from OpenAI");
       }
 
-      const file = await convertToFile(response.data[0].url as string, {
+      const file = await convertToFile(response.data[0].b64_json as string, {
         filePrefix: "gpt-image-1",
       });
 
@@ -58,7 +59,7 @@ class GPTImageHandler
     return quality;
   }
 
-  private mapAspectRatioToSize(aspectRatio?: ImageAspectRatio): string {
+  private mapAspectRatioToSize(aspectRatio?: ImageAspectRatio): any {
     switch (aspectRatio) {
       case "1:1":
         return "1024x1024";

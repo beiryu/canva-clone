@@ -83,21 +83,21 @@ const app = new Hono()
       "json",
       z.object({
         projectId: z.string(),
+        model: z.string(),
         prompt: z.string(),
         style: z.string(),
         canvasImage: z.string().optional(),
         settings: z.object({
-          model: z.string(),
           aspectRatio: z.string().optional(),
           quality: z.string().optional(),
         }),
       }),
     ),
     async (c) => {
-      const { projectId, prompt, style, settings, canvasImage } =
+      const { projectId, prompt, style, settings, canvasImage, model } =
         c.req.valid("json");
 
-      const { model, aspectRatio, quality } = settings;
+      const { aspectRatio, quality } = settings;
 
       const auth = c.get("authUser");
 
@@ -110,10 +110,10 @@ const app = new Hono()
 
       try {
         const result = await agentManager.generateImage({
+          model: model as ImageGenerationModel,
           prompt,
           canvasImage,
           settings: {
-            model: model as ImageGenerationModel,
             aspectRatio: aspectRatio as ImageAspectRatio,
             quality: quality as ImageQuality,
           },

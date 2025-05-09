@@ -29,14 +29,6 @@ import {
 } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
-import { Slider } from "@/components/ui/slider";
-import { Input } from "@/components/ui/input";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { toast } from "sonner";
 import { useVisualStyle } from "@/features/editor/store/use-visual-style";
 import { useAgentGenerateImage } from "@/features/ai/api/use-agent-generate-image";
@@ -80,6 +72,8 @@ export const GenerateSidebar = ({
   onClose,
   projectId,
 }: GenerateSidebarProps) => {
+  const [model, setModel] = useState<ImageGenerationModel>("flux-schnell");
+
   const { selectedStyle } = useVisualStyle();
 
   const [state, dispatch] = useReducer(reducer, INITIAL_GENERATE_STATE);
@@ -90,14 +84,13 @@ export const GenerateSidebar = ({
 
   // Get model params based on selected model
   const getModelParams = useCallback(() => {
-    const model = formData.model as ImageGenerationModel;
     return (
       modelRegistry.get(model)?.params || {
         quality: ["low", "medium", "high"],
         aspectRatio: ["1:1", "3:2", "2:3"],
       }
     );
-  }, [formData.model]);
+  }, [model]);
 
   const modelParams = getModelParams();
 
@@ -106,6 +99,11 @@ export const GenerateSidebar = ({
     value: any,
   ) => {
     dispatch({ type: "UPDATE_FORM", field, value });
+  };
+
+  const handleModelChange = (value: ImageGenerationModel) => {
+    setModel(value);
+    handleFormChange("aspectRatio", "1:1");
   };
 
   const handleGenerate = useCallback(async () => {
@@ -126,13 +124,13 @@ export const GenerateSidebar = ({
       prompt: formData.prompt,
       style: selectedStyle.id,
       canvasImage: canvasImage,
+      model,
       settings: {
-        model: formData.model,
         aspectRatio: formData.aspectRatio,
         quality: formData.quality,
       },
     });
-  }, [editor, formData, selectedStyle.id, agentGenerateImage, projectId]);
+  }, [editor, agentGenerateImage, projectId, formData, selectedStyle, model]);
 
   return (
     <motion.aside
@@ -207,10 +205,7 @@ export const GenerateSidebar = ({
             <div className="space-y-2">
               <label className="text-sm font-medium">Model</label>
               <div className="flex items-center gap-2">
-                <Select
-                  value={formData.model}
-                  onValueChange={(value) => handleFormChange("model", value)}
-                >
+                <Select value={model} onValueChange={handleModelChange}>
                   <SelectTrigger className="bg-muted border h-full">
                     <SelectValue placeholder="Select model" />
                   </SelectTrigger>

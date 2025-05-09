@@ -1,3 +1,5 @@
+import { AnyModel } from "./models";
+
 export type AgentTask = "image" | "text";
 
 export type ImageGenerationModel = "gpt-image-1" | "flux-schnell";
@@ -28,13 +30,13 @@ export type ImageQuality = "low" | "medium" | "high";
 
 // Base options interface for all generation types
 export interface BaseGenerationOptions {
+  model: AnyModel;
   prompt: string;
 }
 
 export interface ImageGenerationOptions extends BaseGenerationOptions {
   canvasImage?: string;
   settings: {
-    model: ImageGenerationModel;
     aspectRatio?: ImageAspectRatio;
     quality?: ImageQuality;
   };

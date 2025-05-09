@@ -26,8 +26,6 @@ class FluxSchnellHandler
     try {
       const { prompt, settings } = options;
 
-      console.log("Generating image with Flux Schnell", prompt, settings);
-
       const { aspectRatio = "1:1", quality = "medium" } = settings;
 
       const input = {
@@ -36,6 +34,8 @@ class FluxSchnellHandler
         output_format: "webp",
         output_quality: this.mapQuality(quality),
       };
+
+      console.log("Generating image with Flux Schnell", input);
 
       const output = await replicate.run("black-forest-labs/flux-schnell", {
         input,

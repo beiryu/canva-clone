@@ -23,20 +23,31 @@ export async function convertToFile(
     fileType = "image/webp",
   } = options;
 
-  // Handle different input types
-  if (typeof imageData === "string") {
+  // Determine the type of input data
+  if (imageData instanceof Blob) {
+    // Case: Already a Blob object
+    const contentType = fileType;
+    const fileExt = contentType.split("/")[1] || "webp";
+    const finalFileName = `${filePrefix}_${Date.now()}.${fileExt}`;
+
+    return new File([imageData], finalFileName, { type: contentType });
+  }
+
+  if (typeof imageData !== "string") {
+    throw new Error("Unsupported image data format");
+  }
+
+  // Handle string input types with switch case
+  switch (true) {
     // Case 1: Remote URL
-    if (imageData.startsWith("http")) {
+    case imageData.startsWith("http"): {
       const response = await fetch(imageData);
       if (!response.ok) {
         throw new Error(`Failed to fetch image: ${response.statusText}`);
       }
 
-      // Get content type from response or use default
       const contentType = fileType;
       const blob = await response.blob();
-
-      // Determine file extension from content type
       const fileExt = contentType.split("/")[1] || "webp";
       const finalFileName = `${filePrefix}_${Date.now()}.${fileExt}`;
 
@@ -44,11 +55,11 @@ export async function convertToFile(
     }
 
     // Case 2: Base64 data URL
-    else if (imageData.startsWith("data:")) {
-      const [dataPart] = imageData.split(",");
-
-      // Extract MIME type from the meta part of data URL
-      const contentType = fileType;
+    case imageData.startsWith("data:"): {
+      const [metaPart, dataPart] = imageData.split(",");
+      const contentType = metaPart
+        ? metaPart.match(/:(.*?);/)?.[1] || fileType
+        : fileType;
       const fileExt = contentType.split("/")[1] || "webp";
       const finalFileName = `${filePrefix}_${Date.now()}.${fileExt}`;
 
@@ -65,9 +76,32 @@ export async function convertToFile(
       return new File([blob], finalFileName, { type: contentType });
     }
 
-    // Case 3: Plain string (likely URL from AI model output)
-    else {
-      // Assume it's a URL that can be fetched
+    // Case 3: Raw base64 string (like OpenAI's b64_json output)
+    case /^[A-Za-z0-9+/=]+$/.test(imageData.trim()): {
+      try {
+        const contentType = fileType;
+        const fileExt = contentType.split("/")[1] || "webp";
+        const finalFileName = `${filePrefix}_${Date.now()}.${fileExt}`;
+
+        // Convert base64 to binary
+        const byteString = atob(imageData.trim());
+        const arrayBuffer = new ArrayBuffer(byteString.length);
+        const uint8Array = new Uint8Array(arrayBuffer);
+
+        for (let i = 0; i < byteString.length; i++) {
+          uint8Array[i] = byteString.charCodeAt(i);
+        }
+
+        const blob = new Blob([arrayBuffer], { type: contentType });
+        return new File([blob], finalFileName, { type: contentType });
+      } catch (error) {
+        console.error("Error converting base64 string to file:", error);
+        // If base64 decoding fails, fall through to the default case
+      }
+    }
+
+    // Case 4: Plain string (likely URL from AI model output)
+    default: {
       try {
         const response = await fetch(imageData);
         if (!response.ok) {
@@ -87,14 +121,4 @@ export async function convertToFile(
       }
     }
   }
-  // Case 4: Already a Blob object
-  else if (imageData instanceof Blob) {
-    const contentType = fileType;
-    const fileExt = contentType.split("/")[1] || "webp";
-    const finalFileName = `${filePrefix}_${Date.now()}.${fileExt}`;
-
-    return new File([imageData], finalFileName, { type: contentType });
-  }
-
-  throw new Error("Unsupported image data format");
 }

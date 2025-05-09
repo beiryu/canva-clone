@@ -19,7 +19,7 @@ export interface ModelConfig {
   };
 }
 
-type AnyModel = ImageGenerationModel | TextGenerationModel;
+export type AnyModel = ImageGenerationModel | TextGenerationModel;
 
 export const modelRegistry = new Map<AnyModel, ModelConfig>([
   // TODO: For local testing
