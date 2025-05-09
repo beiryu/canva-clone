@@ -38,8 +38,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { toast } from "sonner";
-import { useGenerateCanvasImage } from "@/features/ai/api/use-generate-canvas-image";
-import { useSaveGeneratedImage } from "@/features/projects/api/use-save-generated-image";
 import { useQueryClient } from "@tanstack/react-query";
 import { useVisualStyle } from "@/features/editor/store/use-visual-style";
 import { useAgentGenerateImage } from "@/features/ai/api/use-agent-generate-image";
@@ -50,6 +48,7 @@ import {
 } from "@/features/agents/types";
 import { cacheGenerateImage } from "../utils";
 import { getModelsByCapability } from "@/features/agents/utilts";
+import { getImageUrl } from "@/features/images/utils";
 
 interface GenerateSidebarProps {
   editor: Editor | undefined;
@@ -88,8 +87,6 @@ export const GenerateSidebar = ({
   projectId,
 }: GenerateSidebarProps) => {
   const [useSeed, setUseSeed] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [tempImageId, setTempImageId] = useState<string | null>(null);
 
   const { selectedStyle } = useVisualStyle();
 
@@ -101,8 +98,6 @@ export const GenerateSidebar = ({
 
   const cache = cacheGenerateImage(queryClient, projectId);
 
-  const generateImage = useGenerateCanvasImage();
-  const saveImage = useSaveGeneratedImage(projectId);
   const agentGenerateImage = useAgentGenerateImage();
 
   // Get model params based on selected model
@@ -132,81 +127,50 @@ export const GenerateSidebar = ({
       return;
     }
 
-    try {
-      setIsGenerating(true);
+    // Create a temporary id for the loading image
+    const tempId = Date.now().toString();
 
-      // Create a temporary id for the loading image
-      const tempId = Date.now().toString();
-      setTempImageId(tempId);
+    // Add temporary loading image to the cache
+    cache.addLoadingImage(tempId, formData, selectedStyle.id);
 
-      // Add temporary loading image to the cache
-      cache.addLoadingImage(tempId, formData, selectedStyle.id);
+    // Get canvas image as base64
+    const canvasImage = editor.canvas?.toDataURL({
+      format: "png",
+      quality: 1,
+    });
 
-      // Get canvas image as base64
-      const canvasImage = editor.canvas?.toDataURL({
-        format: "png",
-        quality: 1,
-      });
-
-      // Use the agent-based image generation
-      const response = await agentGenerateImage.mutateAsync({
-        prompt: formData.prompt,
-        model: formData.model,
-        canvasImage: canvasImage,
-        enhancePrompt: formData.enhancePrompt,
-        aspectRatio: formData.aspectRatio,
-        quality: formData.quality,
-        seed: formData.seed,
-      });
-
-      // Check if response has data property
-      if (
-        !response ||
-        !("data" in response) ||
-        typeof response.data !== "string"
-      ) {
-        throw new Error("Invalid response from image generation");
-      }
-
-      const imageUrl = response.data;
-
-      // Save the generated image
-      const savedImageResponse = await saveImage.mutateAsync({
-        url: imageUrl,
+    // Use the agent-based image generation
+    await agentGenerateImage.mutateAsync(
+      {
+        projectId,
         prompt: formData.prompt,
         style: selectedStyle.id,
+        canvasImage: canvasImage,
         settings: {
           model: formData.model,
           aspectRatio: formData.aspectRatio,
           quality: formData.quality,
           seed: formData.seed,
         },
-      });
-
-      // Update the UI with the new image
-      if (savedImageResponse.data) {
-        cache.updateImageWithUrl(tempId, imageUrl, savedImageResponse.data.id);
-      }
-
-      setIsGenerating(false);
-      onClose();
-    } catch (error) {
-      console.error("Error generating image:", error);
-      toast.error("Failed to generate image. Please try again.");
-      if (tempImageId) {
-        cache.removeImage(tempImageId);
-      }
-      setIsGenerating(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      },
+      {
+        onSuccess: ({ data }) => {
+          cache.updateImageWithUrl(tempId, getImageUrl(data.fullPath), data.id);
+          toast.success("Image generated successfully");
+        },
+        onError: () => {
+          toast.error("Failed to generate image");
+          // cache.updateImageWithUrl(tempId, imageUrl, savedImageResponse.data.id);
+        },
+      },
+    );
   }, [
     editor,
-    formData,
-    tempImageId,
-    agentGenerateImage,
-    saveImage,
     cache,
-    onClose,
+    formData,
+    selectedStyle.id,
+    agentGenerateImage,
+    projectId,
   ]);
 
   return (
@@ -268,14 +232,7 @@ export const GenerateSidebar = ({
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                  <Switch
-                    id="enhance-prompt"
-                    checked={formData.enhancePrompt}
-                    onCheckedChange={(value) =>
-                      handleFormChange("enhancePrompt", value)
-                    }
-                    className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-secondary-foreground/50"
-                  />
+                  <Switch className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-secondary-foreground/50" />
                 </div>
               </div>
               <Textarea
@@ -482,15 +439,15 @@ export const GenerateSidebar = ({
             size={"lg"}
             effect="gooeyLeft"
             onClick={handleGenerate}
-            disabled={isGenerating}
+            disabled={agentGenerateImage.isPending}
           >
-            {isGenerating ? (
+            {agentGenerateImage.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : (
               <Wand2 className="h-4 w-4 mr-2" />
             )}
             <span className="mr-2">
-              {isGenerating ? "Generating..." : "Generate"}
+              {agentGenerateImage.isPending ? "Generating..." : "Generate"}
             </span>
           </Button>
         </div>

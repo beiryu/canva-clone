@@ -147,7 +147,10 @@ export const generatedImages = pgTable("generated_image", {
   projectId: text("projectId")
     .notNull()
     .references(() => projects.id, { onDelete: "cascade" }),
-  url: text("url").notNull(),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  fullPath: text("fullPath").notNull(),
   prompt: text("prompt"),
   style: text("style"),
   settings: jsonb("settings").notNull(),

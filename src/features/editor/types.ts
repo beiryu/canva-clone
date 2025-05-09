@@ -267,7 +267,6 @@ export interface Editor {
 export interface GenerateState {
   formData: {
     prompt: string;
-    enhancePrompt: boolean;
     model: string;
     aspectRatio: string;
     quality: string;
@@ -280,7 +279,6 @@ export const INITIAL_GENERATE_STATE: GenerateState = {
   formData: {
     prompt:
       "Artistic background with multiple overlapping characters, in an abstract or semi-abstract style",
-    enhancePrompt: false,
     model: "flux-schnell",
     aspectRatio: "1:1",
     quality: "medium",

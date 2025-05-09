@@ -270,69 +270,6 @@ const app = new Hono()
     },
   )
 
-  // Save a generated image for a project
-  .post(
-    "/:id/images",
-    verifyAuth(),
-    zValidator("param", z.object({ id: z.string() })),
-    zValidator(
-      "json",
-      generatedImagesInsertSchema
-        .pick({
-          url: true,
-          prompt: true,
-          style: true,
-          settings: true,
-        })
-        .extend({
-          settings: z
-            .object({
-              model: z.string().optional(),
-              aspectRatio: z.string().optional(),
-              quality: z.string().optional(),
-              seed: z.number().optional(),
-            })
-            .optional()
-            .transform((val) => val || {}),
-        }),
-    ),
-    async (c) => {
-      const auth = c.get("authUser");
-      const { id } = c.req.valid("param");
-      const { url, prompt, style, settings } = c.req.valid("json");
-
-      if (!auth.token?.id) {
-        return c.json({ error: "Unauthorized" }, 401);
-      }
-
-      // Verify the user owns the project
-      const projectData = await db
-        .select()
-        .from(projects)
-        .where(and(eq(projects.id, id), eq(projects.userId, auth.token.id)));
-
-      if (projectData.length === 0) {
-        return c.json({ error: "Project not found" }, 404);
-      }
-
-      // Save the generated image
-      const newImage = await db
-        .insert(generatedImages)
-        .values({
-          projectId: id,
-          url,
-          prompt,
-          style,
-          settings,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .returning();
-
-      return c.json({ data: newImage[0] });
-    },
-  )
-
   // Delete a generated image
   .delete(
     "/:projectId/images/:imageId",

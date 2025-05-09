@@ -4,7 +4,8 @@ import { InferRequestType, InferResponseType } from "hono";
 import { client } from "@/lib/hono";
 
 type ResponseType = InferResponseType<
-  (typeof client.api.ai)["agent-generate-image"]["$post"]
+  (typeof client.api.ai)["agent-generate-image"]["$post"],
+  200
 >;
 
 type RequestType = InferRequestType<

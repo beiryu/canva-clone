@@ -1,6 +1,6 @@
 {
-  "id": "3a5b2e06-f16f-410e-ac08-e1eb6819abe4",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "a1f0fd34-1052-4c56-83e6-997cbdc7ab6a",
+  "prevId": "3a5b2e06-f16f-410e-ac08-e1eb6819abe4",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -190,8 +190,14 @@
           "primaryKey": false,
           "notNull": true
         },
-        "url": {
-          "name": "url",
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fullPath": {
+          "name": "fullPath",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -234,6 +240,15 @@
           "tableFrom": "generated_image",
           "tableTo": "project",
           "columnsFrom": ["projectId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "generated_image_userId_user_id_fk": {
+          "name": "generated_image_userId_user_id_fk",
+          "tableFrom": "generated_image",
+          "tableTo": "user",
+          "columnsFrom": ["userId"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"

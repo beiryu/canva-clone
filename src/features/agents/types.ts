@@ -33,7 +33,6 @@ export interface BaseGenerationOptions {
 
 export interface ImageGenerationOptions extends BaseGenerationOptions {
   prompt: string;
-  enhancePrompt?: boolean;
   aspectRatio?: ImageAspectRatio;
   quality?: ImageQuality;
   model: ImageGenerationModel;

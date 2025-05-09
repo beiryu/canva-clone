@@ -6,7 +6,7 @@ export const useGetUnsplashImages = () => {
   const query = useQuery({
     queryKey: ["images", "unsplash"],
     queryFn: async () => {
-      const response = await client.api.images.$get();
+      const response = await client.api.images.unsplash.$get();
 
       if (!response.ok) {
         throw new Error("Failed to fetch Unsplash images");

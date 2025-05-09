@@ -11,7 +11,7 @@ const DEFAULT_COUNT = 50;
 const DEFAULT_COLLECTION_IDS = ["317099"];
 
 const app = new Hono()
-  .get("/", verifyAuth(), async (c) => {
+  .get("/unsplash", verifyAuth(), async (c) => {
     const images = await unsplash.photos.getRandom({
       collectionIds: DEFAULT_COLLECTION_IDS,
       count: DEFAULT_COUNT,
