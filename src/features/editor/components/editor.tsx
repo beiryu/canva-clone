@@ -159,6 +159,7 @@ export const Editor = ({ initialData }: EditorProps) => {
           editor={editor}
           activeTool={activeTool}
           onChangeActiveTool={onChangeActiveTool}
+          projectId={initialData.id}
         />
         <TemplateSidebar
           editor={editor}
@@ -179,6 +180,7 @@ export const Editor = ({ initialData }: EditorProps) => {
           editor={editor}
           activeTool={activeTool}
           onChangeActiveTool={onChangeActiveTool}
+          projectId={initialData.id}
         />
         <DrawSidebar
           editor={editor}

@@ -166,3 +166,34 @@ export const generatedImagesRelations = relations(
 );
 
 export const generatedImagesInsertSchema = createInsertSchema(generatedImages);
+
+export const uploadedImages = pgTable("uploaded_image", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  projectId: text("projectId")
+    .notNull()
+    .references(() => projects.id, { onDelete: "cascade" }),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  fullPath: text("fullPath").notNull(),
+  fileName: text("fileName").notNull(),
+  fileSize: integer("fileSize").notNull(),
+  fileType: text("fileType").notNull(),
+  createdAt: timestamp("createdAt", { mode: "date" }).notNull(),
+  updatedAt: timestamp("updatedAt", { mode: "date" }).notNull(),
+});
+
+export const uploadedImagesRelations = relations(uploadedImages, ({ one }) => ({
+  project: one(projects, {
+    fields: [uploadedImages.projectId],
+    references: [projects.id],
+  }),
+  user: one(users, {
+    fields: [uploadedImages.userId],
+    references: [users.id],
+  }),
+}));
+
+export const uploadedImagesInsertSchema = createInsertSchema(uploadedImages);

@@ -12,17 +12,20 @@ import { useRemoveBg } from "@/features/ai/api/use-remove-bg";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { getImageUrl } from "@/features/images/utils";
 
 interface RemoveBgSidebarProps {
   editor: Editor | undefined;
   activeTool: ActiveTool;
   onChangeActiveTool: (tool: ActiveTool) => void;
+  projectId: string;
 }
 
 export const RemoveBgSidebar = ({
   editor,
   activeTool,
   onChangeActiveTool,
+  projectId,
 }: RemoveBgSidebarProps) => {
   const { shouldBlock, triggerPaywall } = usePaywall();
   const mutation = useRemoveBg();
@@ -45,10 +48,11 @@ export const RemoveBgSidebar = ({
     mutation.mutate(
       {
         image: imageSrc,
+        projectId,
       },
       {
-        onSuccess: ({ data }) => {
-          editor?.addImage(data);
+        onSuccess: ({ data: { fullPath } }) => {
+          editor?.addImage(getImageUrl(fullPath));
         },
       },
     );

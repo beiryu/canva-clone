@@ -9,6 +9,9 @@ import {
   ImageGenerationModel,
   ImageQuality,
 } from "@/features/agents/types";
+import { db } from "@/db/drizzle";
+import { uploadedImages } from "@/db/schema";
+import { uploadRemoteImageToSupabase } from "@/features/images/core/supabase";
 import { replicate } from "@/lib/replicate";
 
 const app = new Hono()
@@ -19,10 +22,16 @@ const app = new Hono()
       "json",
       z.object({
         image: z.string(),
+        projectId: z.string(),
       }),
     ),
     async (c) => {
-      const { image } = c.req.valid("json");
+      const auth = c.get("authUser");
+      const { image, projectId } = c.req.valid("json");
+
+      if (!auth.token?.id) {
+        return c.json({ error: "Unauthorized" }, 401);
+      }
 
       const input = {
         image: image,
@@ -33,9 +42,35 @@ const app = new Hono()
         { input },
       );
 
-      const res = output as string;
+      const resultImageUrl = output as string;
 
-      return c.json({ data: res });
+      // Upload the result to Supabase
+      const uploadResult = await uploadRemoteImageToSupabase({
+        imageUrl: resultImageUrl,
+        userId: auth.token.id,
+        projectId: projectId,
+        prefix: "remove-bg",
+      });
+
+      // Save the image metadata to the database
+      const now = new Date();
+      const [savedImage] = await db
+        .insert(uploadedImages)
+        .values({
+          fullPath: uploadResult.fullPath,
+          fileName: uploadResult.fileName,
+          fileSize: uploadResult.fileSize,
+          fileType: uploadResult.fileType,
+          userId: auth.token.id,
+          projectId: projectId,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .returning();
+
+      return c.json({
+        data: savedImage,
+      });
     },
   )
   .post(
