@@ -11,7 +11,10 @@ import {
 } from "@/features/agents/types";
 import { db } from "@/db/drizzle";
 import { generatedImages, uploadedImages } from "@/db/schema";
-import { uploadRemoteImageToSupabase } from "@/features/images/core/supabase";
+import {
+  uploadFileToSupabase,
+  uploadRemoteImageToSupabase,
+} from "@/features/images/core/supabase";
 import { replicate } from "@/lib/replicate";
 
 const app = new Hono()
@@ -74,38 +77,6 @@ const app = new Hono()
     },
   )
   .post(
-    "/generate-image",
-    verifyAuth(),
-    zValidator(
-      "json",
-      z.object({
-        prompt: z.string(),
-      }),
-    ),
-    async (c) => {
-      const { prompt } = c.req.valid("json");
-
-      const input = {
-        cfg: 3.5,
-        steps: 28,
-        prompt: prompt,
-        aspect_ratio: "3:2",
-        output_format: "webp",
-        output_quality: 90,
-        negative_prompt: "",
-        prompt_strength: 0.85,
-      };
-
-      const output = await replicate.run("stability-ai/stable-diffusion-3", {
-        input,
-      });
-
-      const res = output as Array<string>;
-
-      return c.json({ data: res[0] });
-    },
-  )
-  .post(
     "/agent-generate-image",
     verifyAuth(),
     zValidator(
@@ -119,7 +90,6 @@ const app = new Hono()
           model: z.string(),
           aspectRatio: z.string().optional(),
           quality: z.string().optional(),
-          seed: z.number().optional(),
         }),
       }),
     ),
@@ -127,7 +97,7 @@ const app = new Hono()
       const { projectId, prompt, style, settings, canvasImage } =
         c.req.valid("json");
 
-      const { model, aspectRatio, quality, seed } = settings;
+      const { model, aspectRatio, quality } = settings;
 
       const auth = c.get("authUser");
 
@@ -141,19 +111,20 @@ const app = new Hono()
       try {
         const result = await agentManager.generateImage({
           prompt,
-          model: model as ImageGenerationModel,
           canvasImage,
-          aspectRatio: aspectRatio as ImageAspectRatio,
-          quality: quality as ImageQuality,
-          seed: seed,
+          settings: {
+            model: model as ImageGenerationModel,
+            aspectRatio: aspectRatio as ImageAspectRatio,
+            quality: quality as ImageQuality,
+          },
         });
 
         // Upload the result to Supabase
-        const { fullPath } = await uploadRemoteImageToSupabase({
-          imageUrl: result.url,
+        const { fullPath } = await uploadFileToSupabase({
+          file: result.file,
           userId: auth.token.id,
           projectId: projectId,
-          prefix: "agent-generate-image",
+          prefix: "generated-image",
         });
 
         // Save the image metadata to the database

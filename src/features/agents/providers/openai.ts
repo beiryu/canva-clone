@@ -10,7 +10,7 @@ import {
   ModelCapability,
   ModelHandler,
 } from "../types";
-
+import { convertToFile } from "@/features/images/utils";
 // Model handler for GPT-Image-1
 class GPTImageHandler
   extends BaseModelHandler
@@ -23,27 +23,30 @@ class GPTImageHandler
   async generateImage(
     options: ImageGenerationOptions,
   ): Promise<ImageGenerationResult> {
-    const size = this.mapAspectRatioToSize(options.aspectRatio);
-    const quality = this.mapQuality(options.quality);
+    const { prompt, settings } = options;
+
+    const { aspectRatio = "1:1", quality = "high" } = settings;
+
+    const size = this.mapAspectRatioToSize(aspectRatio);
 
     try {
       const response = await openai.images.generate({
         model: "gpt-image-1",
-        prompt: options.prompt,
-        n: options.n || 1,
+        prompt: prompt,
+        n: 1,
         size: size as any,
-        quality: quality,
+        quality: this.mapQuality(quality),
       });
 
       if (!response || !response.data || response.data.length === 0) {
         throw new Error("Invalid response format from OpenAI");
       }
 
-      return {
-        url: response.data[0].url as string,
-        model: "gpt-image-1",
-        prompt: options.prompt,
-      };
+      const file = await convertToFile(response.data[0].url as string, {
+        filePrefix: "gpt-image-1",
+      });
+
+      return { file };
     } catch (error) {
       console.error("Error calling OpenAI:", error);
       throw error;

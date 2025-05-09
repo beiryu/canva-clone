@@ -6,8 +6,6 @@ import { ActiveTool, Editor } from "@/features/editor/types";
 import { ToolSidebarClose } from "@/features/editor/components/tool-sidebar-close";
 import { ToolSidebarHeader } from "@/features/editor/components/tool-sidebar-header";
 
-import { useGenerateImage } from "@/features/ai/api/use-generate-image";
-
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,7 +23,7 @@ export const AiSidebar = ({
   onChangeActiveTool,
 }: AiSidebarProps) => {
   const { shouldBlock, triggerPaywall } = usePaywall();
-  const mutation = useGenerateImage();
+  // const mutation = useGenerateImage();
 
   const [value, setValue] = useState("");
 
@@ -37,14 +35,14 @@ export const AiSidebar = ({
       return;
     }
 
-    mutation.mutate(
-      { prompt: value },
-      {
-        onSuccess: ({ data }) => {
-          editor?.addImage(data);
-        },
-      },
-    );
+    // mutation.mutate(
+    //   { prompt: value },
+    //   {
+    //     onSuccess: ({ data }) => {
+    //       editor?.addImage(data);
+    //     },
+    //   },
+    // );
   };
 
   const onClose = () => {
@@ -62,7 +60,7 @@ export const AiSidebar = ({
       <ScrollArea>
         <form onSubmit={onSubmit} className="p-4 space-y-6">
           <Textarea
-            disabled={mutation.isPending}
+            // disabled={mutation.isPending}
             placeholder="An astronaut riding a horse on mars, hd, dramatic lighting"
             cols={30}
             rows={10}
@@ -72,7 +70,7 @@ export const AiSidebar = ({
             onChange={(e) => setValue(e.target.value)}
           />
           <Button
-            disabled={mutation.isPending}
+            // disabled={mutation.isPending}
             type="submit"
             className="w-full"
           >

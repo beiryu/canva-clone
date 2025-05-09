@@ -38,17 +38,11 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
 import { useVisualStyle } from "@/features/editor/store/use-visual-style";
 import { useAgentGenerateImage } from "@/features/ai/api/use-agent-generate-image";
 import { modelRegistry } from "@/features/agents/models";
-import {
-  ImageAspectRatio,
-  ImageGenerationModel,
-} from "@/features/agents/types";
-import { cacheGenerateImage } from "../utils";
-import { getModelsByCapability } from "@/features/agents/utilts";
-import { getImageUrl } from "@/features/images/utils";
+import { ImageGenerationModel } from "@/features/agents/types";
+import { getModelsByCapability } from "@/features/agents/utils";
 
 interface GenerateSidebarProps {
   editor: Editor | undefined;
@@ -86,17 +80,11 @@ export const GenerateSidebar = ({
   onClose,
   projectId,
 }: GenerateSidebarProps) => {
-  const [useSeed, setUseSeed] = useState(false);
-
   const { selectedStyle } = useVisualStyle();
 
   const [state, dispatch] = useReducer(reducer, INITIAL_GENERATE_STATE);
 
   const { formData } = state;
-
-  const queryClient = useQueryClient();
-
-  const cache = cacheGenerateImage(queryClient, projectId);
 
   const agentGenerateImage = useAgentGenerateImage();
 
@@ -105,7 +93,6 @@ export const GenerateSidebar = ({
     const model = formData.model as ImageGenerationModel;
     return (
       modelRegistry.get(model)?.params || {
-        supportsSeed: true,
         quality: ["low", "medium", "high"],
         aspectRatio: ["1:1", "3:2", "2:3"],
       }
@@ -127,12 +114,6 @@ export const GenerateSidebar = ({
       return;
     }
 
-    // Create a temporary id for the loading image
-    const tempId = Date.now().toString();
-
-    // Add temporary loading image to the cache
-    cache.addLoadingImage(tempId, formData, selectedStyle.id);
-
     // Get canvas image as base64
     const canvasImage = editor.canvas?.toDataURL({
       format: "png",
@@ -140,38 +121,18 @@ export const GenerateSidebar = ({
     });
 
     // Use the agent-based image generation
-    await agentGenerateImage.mutateAsync(
-      {
-        projectId,
-        prompt: formData.prompt,
-        style: selectedStyle.id,
-        canvasImage: canvasImage,
-        settings: {
-          model: formData.model,
-          aspectRatio: formData.aspectRatio,
-          quality: formData.quality,
-          seed: formData.seed,
-        },
+    await agentGenerateImage.mutateAsync({
+      projectId,
+      prompt: formData.prompt,
+      style: selectedStyle.id,
+      canvasImage: canvasImage,
+      settings: {
+        model: formData.model,
+        aspectRatio: formData.aspectRatio,
+        quality: formData.quality,
       },
-      {
-        onSuccess: ({ data }) => {
-          cache.updateImageWithUrl(tempId, getImageUrl(data.fullPath), data.id);
-          toast.success("Image generated successfully");
-        },
-        onError: () => {
-          toast.error("Failed to generate image");
-          // cache.updateImageWithUrl(tempId, imageUrl, savedImageResponse.data.id);
-        },
-      },
-    );
-  }, [
-    editor,
-    cache,
-    formData,
-    selectedStyle.id,
-    agentGenerateImage,
-    projectId,
-  ]);
+    });
+  }, [editor, formData, selectedStyle.id, agentGenerateImage, projectId]);
 
   return (
     <motion.aside
@@ -314,16 +275,14 @@ export const GenerateSidebar = ({
                         )}
                       >
                         <div className="flex items-center gap-3 w-full">
-                          <div className="basis-2/3 flex items-center">
-                            <span className="font-medium mr-2">
-                              {ratio.label}
-                            </span>
-                            {ratio.description && (
-                              <p className="text-muted-foreground">
-                                ({ratio.description})
-                              </p>
-                            )}
-                          </div>
+                          <span className="font-medium mr-2">
+                            {ratio.label}
+                          </span>
+                          {ratio.description && (
+                            <p className="text-muted-foreground">
+                              ({ratio.description})
+                            </p>
+                          )}
                         </div>
                       </SelectItem>
                     ))}
@@ -362,74 +321,6 @@ export const GenerateSidebar = ({
                 </Select>
               </div>
             )}
-
-            {/* Number of Images Slider */}
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <Label className="text-sm font-medium">Number of Images</Label>
-                <span className="text-sm">{formData.numImages}</span>
-              </div>
-              <Slider
-                min={1}
-                max={4}
-                step={1}
-                value={[formData.numImages]}
-                onValueChange={(value) =>
-                  handleFormChange("numImages", value[0])
-                }
-                className="py-2"
-              />
-            </div>
-
-            <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="advanced" className="border-b-0">
-                <AccordionTrigger className="py-2 text-sm font-medium hover:no-underline">
-                  Advanced Settings
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="space-y-4 py-2">
-                    {/* Seed Option */}
-                    {modelParams.supportsSeed && (
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <Label
-                            htmlFor="use-seed"
-                            className="text-sm font-medium"
-                          >
-                            Use Seed
-                          </Label>
-                          <Switch
-                            id="use-seed"
-                            checked={useSeed}
-                            onCheckedChange={setUseSeed}
-                            className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-secondary-foreground/50"
-                          />
-                        </div>
-                        {useSeed && (
-                          <div className="px-1">
-                            <Input
-                              type="number"
-                              placeholder="Enter seed (optional)"
-                              value={formData.seed}
-                              onChange={(e) =>
-                                handleFormChange(
-                                  "seed",
-                                  parseInt(e.target.value),
-                                )
-                              }
-                              className="bg-[#1a1a1a] border-gray-800"
-                            />
-                            <p className="text-xs text-muted-foreground m-1">
-                              Using the same seed produces similar results
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
           </div>
         </ScrollArea>
 

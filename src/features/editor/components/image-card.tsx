@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { EyeOff, Trash2, Edit, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { visualStyles } from "../store/use-visual-style";
+import { getImageUrl } from "@/features/images/utils";
 
 interface ImageCardProps {
   image: any;
@@ -19,14 +20,14 @@ export function ImageCard({ image }: ImageCardProps) {
       <div className="flex flex-col md:flex-row">
         <div className="relative w-full md:w-3/4 h-[300px] md:h-[400px]">
           {/* Status indicator */}
-          {image.status === "loading" && (
+          {image.id === "id" && (
             <div className="absolute top-3 left-3 z-10 bg-black/70 text-primary px-3 py-1 rounded-full text-sm font-medium">
               In progress
             </div>
           )}
 
           {/* Image content */}
-          {image.status === "loading" && (
+          {image.id === "id" && (
             <div className="w-full h-full bg-gradient-to-r from-[#8a5a5a] to-[#8a7a5a] animate-pulse">
               <div className="flex items-center justify-center h-full">
                 <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -34,11 +35,10 @@ export function ImageCard({ image }: ImageCardProps) {
             </div>
           )}
 
-          {/* TODO: Add image status = success */}
-          {!image.status && (
+          {image.id !== "id" && (
             <div className="w-full h-full transition-opacity duration-300 ease-in-out">
               <Image
-                src={image.url || "/placeholder.svg"}
+                src={getImageUrl(image.fullPath) || "/placeholder.svg"}
                 alt={image.prompt || "Generated image"}
                 fill
                 className="object-contain"
@@ -46,45 +46,21 @@ export function ImageCard({ image }: ImageCardProps) {
             </div>
           )}
 
-          {image.status === "error" && (
-            <div className="w-full h-full bg-muted flex flex-col items-center justify-center p-6 text-center">
-              <EyeOff className="w-12 h-12 mb-4 text-muted-foreground" />
-              <h3 className="text-xl font-bold mb-2">Whoops!</h3>
-              <p className="text-muted-foreground mb-6">
-                {image.errorMessage ||
-                  "An error occurred while generating this image."}
-              </p>
-              <Button
-                variant="destructive"
-                size="sm"
-                // onClick={onDelete}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </Button>
-            </div>
-          )}
-
           {/* Action buttons */}
-          {image.status !== "error" && (
+          {image.id !== "id" && (
             <div className="absolute bottom-3 right-3 flex gap-2">
               <Button
                 variant="secondary"
                 size="sm"
-                disabled={image.status === "loading"}
+                disabled={image.id === "id"}
                 className={cn(
                   "bg-black/50",
-                  image.status === "loading" && "opacity-50 cursor-not-allowed",
+                  image.id === "id" && "opacity-50 cursor-not-allowed",
                 )}
               >
                 <Edit className="h-4 w-4 mr-1" /> Edit
               </Button>
-              <Button
-                variant="default"
-                size="sm"
-                disabled={image.status === "loading"}
-              >
+              <Button variant="default" size="sm" disabled={image.id === "id"}>
                 <Download className="h-4 w-4" />
               </Button>
             </div>
@@ -135,11 +111,6 @@ export function ImageCard({ image }: ImageCardProps) {
                 {image.settings.quality && (
                   <p className="text-xs text-gray-400">
                     Quality: {image.settings.quality}
-                  </p>
-                )}
-                {image.settings.seed !== undefined && (
-                  <p className="text-xs text-gray-400">
-                    Seed: {image.settings.seed}
                   </p>
                 )}
               </div>

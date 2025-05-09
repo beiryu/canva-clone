@@ -11,7 +11,6 @@ export interface ModelConfig {
   description: string;
   capabilities: ModelCapability[];
   params: {
-    supportsSeed?: boolean;
     quality?: string[];
     aspectRatio?: string[];
 
@@ -32,7 +31,6 @@ export const modelRegistry = new Map<AnyModel, ModelConfig>([
       description: "Standard speed, standard queue",
       capabilities: ["image-generation"],
       params: {
-        supportsSeed: true,
         quality: ["low", "medium", "high"],
         aspectRatio: [
           "1:1",
@@ -58,7 +56,6 @@ export const modelRegistry = new Map<AnyModel, ModelConfig>([
       description: "Faster speed, higher quality images",
       capabilities: ["image-generation"],
       params: {
-        supportsSeed: false,
         quality: ["low", "medium", "high"],
         aspectRatio: ["1:1", "2:3", "3:2"],
       },

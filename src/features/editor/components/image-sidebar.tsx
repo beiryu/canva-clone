@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AlertTriangle, Loader, Upload } from "lucide-react";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 
 import { ActiveTool, Editor } from "@/features/editor/types";
 import { ToolSidebarClose } from "@/features/editor/components/tool-sidebar-close";
@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getImageUrl } from "@/features/images/utils";
-
+import Image from "next/image";
 interface ImageSidebarProps {
   editor: Editor | undefined;
   activeTool: ActiveTool;
@@ -135,11 +135,12 @@ export const ImageSidebar = ({
                     key={image.id}
                     className="relative w-full h-[100px] group hover:opacity-75 transition bg-muted rounded-sm overflow-hidden border"
                   >
-                    <img
+                    <Image
                       src={getImageUrl(image.fullPath)}
                       alt={image.fileName || "Uploaded Image"}
                       className="object-cover w-full h-full"
                       loading="lazy"
+                      fill
                     />
                   </button>
                 ))}
@@ -162,11 +163,12 @@ export const ImageSidebar = ({
                     key={image.id}
                     className="relative w-full h-[100px] group hover:opacity-75 transition bg-muted rounded-sm overflow-hidden border"
                   >
-                    <img
+                    <Image
                       src={image?.urls?.small || image?.urls?.thumb}
                       alt={image.alt_description || "Image"}
                       className="object-cover w-full h-full"
                       loading="lazy"
+                      fill
                     />
                     <Link
                       target="_blank"

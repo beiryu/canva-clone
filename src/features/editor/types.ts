@@ -270,8 +270,6 @@ export interface GenerateState {
     model: string;
     aspectRatio: string;
     quality: string;
-    numImages: number;
-    seed?: number;
   };
 }
 
@@ -282,8 +280,6 @@ export const INITIAL_GENERATE_STATE: GenerateState = {
     model: "flux-schnell",
     aspectRatio: "1:1",
     quality: "medium",
-    numImages: 1,
-    seed: undefined,
   },
 };
 

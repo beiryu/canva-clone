@@ -1,4 +1,5 @@
 import { replicate } from "@/lib/replicate";
+import { convertToFile } from "@/features/images/utils";
 import { BaseModelHandler } from "../model-handler";
 import {
   AgentProvider,
@@ -23,14 +24,17 @@ class FluxSchnellHandler
     options: ImageGenerationOptions,
   ): Promise<ImageGenerationResult> {
     try {
-      console.log("Generating image with Flux Schnell", options);
+      const { prompt, settings } = options;
+
+      console.log("Generating image with Flux Schnell", prompt, settings);
+
+      const { aspectRatio = "1:1", quality = "medium" } = settings;
 
       const input = {
-        prompt: options.prompt,
-        aspect_ratio: options.aspectRatio || "1:1",
+        prompt,
+        aspect_ratio: aspectRatio,
         output_format: "webp",
-        output_quality: this.mapQuality(options.quality),
-        seed: options.seed,
+        output_quality: this.mapQuality(quality),
       };
 
       const output = await replicate.run("black-forest-labs/flux-schnell", {
@@ -43,18 +47,18 @@ class FluxSchnellHandler
         throw new Error("Invalid output from Replicate");
       }
 
-      return {
-        url: result[0],
-        model: "flux-schnell",
-        prompt: options.prompt,
-      };
+      const file = await convertToFile(result[0], {
+        filePrefix: "flux-schnell",
+      });
+
+      return { file };
     } catch (error) {
       console.error("Error with Replicate API:", error);
       throw error;
     }
   }
 
-  private mapQuality(quality?: ImageQuality): number {
+  private mapQuality(quality: ImageQuality): number {
     switch (quality) {
       case "low":
         return 60;

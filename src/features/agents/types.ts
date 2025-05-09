@@ -28,21 +28,19 @@ export type ImageQuality = "low" | "medium" | "high";
 
 // Base options interface for all generation types
 export interface BaseGenerationOptions {
-  model: string;
+  prompt: string;
 }
 
 export interface ImageGenerationOptions extends BaseGenerationOptions {
-  prompt: string;
-  aspectRatio?: ImageAspectRatio;
-  quality?: ImageQuality;
-  model: ImageGenerationModel;
-  seed?: number;
-  n?: number;
   canvasImage?: string;
+  settings: {
+    model: ImageGenerationModel;
+    aspectRatio?: ImageAspectRatio;
+    quality?: ImageQuality;
+  };
 }
 
 export interface TextGenerationOptions extends BaseGenerationOptions {
-  prompt: string;
   temperature?: number;
   maxTokens?: number;
   model: TextGenerationModel;
@@ -50,9 +48,7 @@ export interface TextGenerationOptions extends BaseGenerationOptions {
 
 // Result interfaces
 export interface ImageGenerationResult {
-  url: string;
-  model: ImageGenerationModel;
-  prompt: string;
+  file: File;
 }
 
 export interface TextGenerationResult {
