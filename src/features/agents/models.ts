@@ -62,6 +62,19 @@ export const modelRegistry = new Map<AnyModel, ModelConfig>([
     },
   ],
   [
+    "replicate/gpt-image",
+    {
+      provider: "replicate",
+      name: "Replicate GPT Image",
+      description: "Faster speed, higher quality images",
+      capabilities: ["image-generation"],
+      params: {
+        quality: ["low", "medium", "high"],
+        aspectRatio: ["1:1", "2:3", "3:2"],
+      },
+    },
+  ],
+  [
     "gpt-4",
     {
       provider: "openai",

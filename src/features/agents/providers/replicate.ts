@@ -72,6 +72,63 @@ class FluxSchnellHandler
   }
 }
 
+class ReplicateGPTImageHandler
+  extends BaseModelHandler
+  implements ImageGenerationHandler
+{
+  constructor() {
+    super("replicate/gpt-image", ["image-generation"]);
+  }
+
+  async generateImage(
+    options: ImageGenerationOptions,
+  ): Promise<ImageGenerationResult> {
+    try {
+      const { prompt, settings, canvasImage } = options;
+
+      const { aspectRatio = "1:1", quality = "medium" } = settings;
+
+      const input = {
+        prompt,
+        quality: this.mapQuality(quality),
+        aspect_ratio: aspectRatio,
+        input_images: canvasImage ? [canvasImage] : [],
+        output_format: "webp",
+        openai_api_key: process.env.OPENAI_API_KEY!,
+      };
+
+      console.log("Generating image with Replicate GPT Image", {
+        ...input,
+        openai_api_key: "REDACTED",
+      });
+
+      const output = await replicate.run("openai/gpt-image-1", {
+        input,
+      });
+
+      const result = output as Array<string>;
+
+      if (!result || !result[0]) {
+        throw new Error("Invalid output from Replicate");
+      }
+
+      const file = await convertToFile(result[0], {
+        filePrefix: "replicate-gpt-image",
+      });
+
+      return { file };
+    } catch (error) {
+      console.error("Error with Replicate API:", error);
+      throw error;
+    }
+  }
+
+  private mapQuality(quality?: ImageQuality): "low" | "medium" | "high" {
+    if (!quality) return "high"; // Default to high if not specified
+    return quality;
+  }
+}
+
 export class ReplicateProvider implements AgentProvider {
   name = "replicate";
   supportedCapabilities: ModelCapability[] = ["image-generation"];
@@ -81,6 +138,7 @@ export class ReplicateProvider implements AgentProvider {
   constructor() {
     // Initialize handlers for each model
     this.registerHandler(new FluxSchnellHandler());
+    this.registerHandler(new ReplicateGPTImageHandler());
   }
 
   private registerHandler(handler: ModelHandler): void {

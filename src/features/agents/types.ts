@@ -2,7 +2,10 @@ import { AnyModel } from "./models";
 
 export type AgentTask = "image" | "text";
 
-export type ImageGenerationModel = "gpt-image-1" | "flux-schnell";
+export type ImageGenerationModel =
+  | "gpt-image-1"
+  | "flux-schnell"
+  | "replicate/gpt-image";
 
 export type TextGenerationModel = "gpt-4";
 

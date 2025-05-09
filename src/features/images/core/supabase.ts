@@ -5,7 +5,8 @@ import {
   ResponseUploadedFile,
 } from "../types";
 
-const BUCKET_NAME = "images";
+export const IMAGES_BUCKET_NAME = "images";
+export const TEMPORARY_IMAGES_BUCKET_NAME = "temporary-images";
 
 /**
  * Upload a file to Supabase storage
@@ -13,13 +14,19 @@ const BUCKET_NAME = "images";
 export async function uploadFileToSupabase(
   request: RequestUploadFile,
 ): Promise<ResponseUploadedFile> {
-  const { file, userId, projectId, prefix = "uploaded" } = request;
+  const {
+    file,
+    userId,
+    projectId,
+    prefix = "uploaded",
+    bucketName = IMAGES_BUCKET_NAME,
+  } = request;
 
   const fileName = `${prefix}_${Date.now()}_${file.name}`;
   const path = `${userId}/${projectId}/${fileName}`;
 
   const { data, error } = await supabase.storage
-    .from(BUCKET_NAME)
+    .from(bucketName)
     .upload(path, file, {
       contentType: file.type,
       upsert: false,
@@ -31,6 +38,7 @@ export async function uploadFileToSupabase(
   }
 
   return {
+    path: data.path,
     fullPath: data.fullPath,
     fileName: file.name,
     fileSize: file.size,
@@ -45,7 +53,13 @@ export async function uploadRemoteImageToSupabase(
   request: RequestUploadRemoteImage,
 ): Promise<ResponseUploadedFile> {
   try {
-    const { imageUrl, userId, projectId, prefix = "remote" } = request;
+    const {
+      imageUrl,
+      userId,
+      projectId,
+      prefix = "remote",
+      bucketName = IMAGES_BUCKET_NAME,
+    } = request;
 
     // Fetch the image from the remote URL
     const response = await fetch(imageUrl);
@@ -67,6 +81,7 @@ export async function uploadRemoteImageToSupabase(
       userId,
       projectId,
       prefix,
+      bucketName,
     });
 
     return result;
@@ -76,4 +91,28 @@ export async function uploadRemoteImageToSupabase(
       `Failed to upload remote image: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
+}
+
+/**
+ * Generate a signed URL for a file in Supabase storage
+ * @param path - The full path of the file in storage
+ * @param expiresIn - Number of minutes until expiration
+ * @param bucketName - The name of the bucket to use
+ * @returns Promise<string> - A promise that resolves to a signed URL
+ */
+export async function getSignedUrl(
+  path: string,
+  expiresIn: number = 15,
+  bucketName: string = IMAGES_BUCKET_NAME,
+): Promise<string> {
+  const { data, error } = await supabase.storage
+    .from(bucketName)
+    .createSignedUrl(path, expiresIn * 60); // Convert minutes to seconds
+
+  if (error) {
+    console.error("Error generating signed URL:", error);
+    throw new Error(`Failed to generate signed URL: ${error.message}`);
+  }
+
+  return data.signedUrl;
 }

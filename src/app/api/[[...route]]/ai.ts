@@ -14,8 +14,12 @@ import { generatedImages, uploadedImages } from "@/db/schema";
 import {
   uploadFileToSupabase,
   uploadRemoteImageToSupabase,
+  getSignedUrl,
+  IMAGES_BUCKET_NAME,
+  TEMPORARY_IMAGES_BUCKET_NAME,
 } from "@/features/images/core/supabase";
 import { replicate } from "@/lib/replicate";
+import { convertToFile } from "@/features/images/utils";
 
 const app = new Hono()
   .post(
@@ -94,7 +98,7 @@ const app = new Hono()
       }),
     ),
     async (c) => {
-      const { projectId, prompt, style, settings, canvasImage, model } =
+      let { projectId, prompt, style, settings, canvasImage, model } =
         c.req.valid("json");
 
       const { aspectRatio, quality } = settings;
@@ -103,6 +107,26 @@ const app = new Hono()
 
       if (!auth.token?.id) {
         return c.json({ error: "Unauthorized" }, 401);
+      }
+
+      if (canvasImage) {
+        const canvasImageFile = await convertToFile(canvasImage, {
+          filePrefix: "canvas-image",
+        });
+
+        const canvasImageUrl = await uploadFileToSupabase({
+          file: canvasImageFile,
+          userId: auth.token.id,
+          projectId: projectId,
+          prefix: "temp",
+          bucketName: TEMPORARY_IMAGES_BUCKET_NAME,
+        });
+
+        canvasImage = await getSignedUrl(
+          canvasImageUrl.path,
+          15,
+          TEMPORARY_IMAGES_BUCKET_NAME,
+        );
       }
 
       // Initialize the agent manager with API keys from env
@@ -125,6 +149,7 @@ const app = new Hono()
           userId: auth.token.id,
           projectId: projectId,
           prefix: "generated-image",
+          bucketName: IMAGES_BUCKET_NAME,
         });
 
         // Save the image metadata to the database

@@ -1,4 +1,5 @@
 export type ResponseUploadedFile = {
+  path: string;
   fullPath: string;
   fileName: string;
   fileSize: number;
@@ -10,6 +11,7 @@ export type RequestUploadFile = {
   userId: string;
   projectId: string;
   prefix?: string;
+  bucketName?: string;
 };
 
 export type RequestUploadRemoteImage = {
@@ -17,4 +19,5 @@ export type RequestUploadRemoteImage = {
   userId: string;
   projectId: string;
   prefix?: string;
+  bucketName?: string;
 };

@@ -5,7 +5,10 @@ import { desc, eq } from "drizzle-orm";
 import { unsplash } from "@/lib/unsplash";
 import { uploadedImages } from "@/db/schema";
 import { db } from "@/db/drizzle";
-import { uploadFileToSupabase } from "@/features/images/core/supabase";
+import {
+  IMAGES_BUCKET_NAME,
+  uploadFileToSupabase,
+} from "@/features/images/core/supabase";
 
 const DEFAULT_COUNT = 50;
 const DEFAULT_COLLECTION_IDS = ["317099"];
@@ -70,6 +73,7 @@ const app = new Hono()
         userId: auth.token.id,
         projectId,
         prefix: "uploaded",
+        bucketName: IMAGES_BUCKET_NAME,
       });
 
       // Save the image metadata to the database
