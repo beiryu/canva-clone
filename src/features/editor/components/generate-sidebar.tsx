@@ -204,7 +204,7 @@ export const GenerateSidebar = ({
                   onClick={handleEnhancePrompt}
                   variant="outline"
                   size="sm"
-                  className="flex items-center gap-1 h-8"
+                  className="flex items-center gap-1 h-8 text-xs text-primary"
                   disabled={agentEnhancePrompt.isPending}
                 >
                   {agentEnhancePrompt.isPending ? (
