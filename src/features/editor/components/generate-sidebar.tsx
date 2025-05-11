@@ -16,22 +16,16 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { Info, Loader2, Wand2, X } from "lucide-react";
+import { Loader2, Wand2, X, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import ImageStyles from "./image-styles";
 import VisualStylesDrawer from "./visual-styles-drawer";
 import { Label } from "@/components/ui/label";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useVisualStyle } from "@/features/editor/store/use-visual-style";
 import { useAgentGenerateImage } from "@/features/ai/api/use-agent-generate-image";
+import { useAgentEnhancePrompt } from "@/features/ai/api/use-agent-enhance-prompt";
 import { modelRegistry } from "@/features/agents/models";
 import { ImageGenerationModel } from "@/features/agents/types";
 import { getModelsByCapability } from "@/features/agents/utils";
@@ -81,6 +75,7 @@ export const GenerateSidebar = ({
   const { formData } = state;
 
   const agentGenerateImage = useAgentGenerateImage();
+  const agentEnhancePrompt = useAgentEnhancePrompt();
 
   // Get model params based on selected model
   const getModelParams = useCallback(() => {
@@ -105,6 +100,40 @@ export const GenerateSidebar = ({
     setModel(value);
     handleFormChange("aspectRatio", "1:1");
   };
+
+  const handleEnhancePrompt = useCallback(async () => {
+    if (!formData.prompt || formData.prompt.trim().length === 0) {
+      toast.error("Please enter a prompt first");
+      return;
+    }
+
+    if (formData.prompt.length > 1000) {
+      toast.error("Prompt is too long. Please keep it under 1000 characters");
+      return;
+    }
+
+    try {
+      await agentEnhancePrompt.mutateAsync(
+        {
+          model: "gpt-4",
+          prompt: formData.prompt,
+        },
+        {
+          onSuccess: ({ data }) => {
+            console.log(data);
+
+            handleFormChange("prompt", data.text);
+            toast.success("Prompt enhanced successfully");
+          },
+          onError: () => {
+            toast.error("Failed to enhance prompt");
+          },
+        },
+      );
+    } catch (error) {
+      console.error("Error enhancing prompt:", error);
+    }
+  }, [formData.prompt, agentEnhancePrompt]);
 
   const handleGenerate = useCallback(async () => {
     if (!editor) {
@@ -171,28 +200,20 @@ export const GenerateSidebar = ({
                 <Label htmlFor="prompt" className="text-sm font-medium">
                   Prompt
                 </Label>
-                <div className="flex items-center space-x-2">
-                  <Label
-                    htmlFor="enhance-prompt"
-                    className="text-sm text-gray-400 cursor-pointer"
-                  >
-                    Enhance Prompt
-                  </Label>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-4 w-4 text-gray-400 cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-gray-800 text-white border-gray-700">
-                        <p className="max-w-xs">
-                          Let AI refine your prompt for more creative and
-                          detailed images.
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <Switch className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-secondary-foreground/50" />
-                </div>
+                <Button
+                  onClick={handleEnhancePrompt}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-1 h-8"
+                  disabled={agentEnhancePrompt.isPending}
+                >
+                  {agentEnhancePrompt.isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                  ) : (
+                    <Sparkles className="h-3.5 w-3.5 mr-1" />
+                  )}
+                  <span>Enhance Prompt</span>
+                </Button>
               </div>
               <Textarea
                 placeholder="Describe the image you want to generate..."
@@ -200,8 +221,12 @@ export const GenerateSidebar = ({
                 value={formData.prompt}
                 onChange={(e) => handleFormChange("prompt", e.target.value)}
               />
+              <div className="text-xs text-muted-foreground text-right">
+                {formData.prompt.length}/1000 characters
+              </div>
             </div>
 
+            {/* Model Selection */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Model</label>
               <div className="flex items-center gap-2">

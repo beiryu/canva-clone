@@ -1,6 +1,7 @@
 import { ImageAgent } from "./image-agent";
 import { TextAgent } from "./text-agent";
 import {
+  EnhancePromptOptions,
   ImageGenerationOptions,
   ImageGenerationResult,
   TextGenerationOptions,
@@ -26,6 +27,18 @@ export class AgentManager {
     options: TextGenerationOptions,
   ): Promise<TextGenerationResult> {
     return this.textAgent.generateText(options);
+  }
+
+  async enhancePrompt(
+    options: EnhancePromptOptions,
+  ): Promise<TextGenerationResult> {
+    return this.textAgent.enhancePrompt(options);
+  }
+
+  async editImage(
+    options: ImageGenerationOptions,
+  ): Promise<ImageGenerationResult> {
+    return this.imageAgent.editImage(options);
   }
 
   getAvailableImageModels(): string[] {

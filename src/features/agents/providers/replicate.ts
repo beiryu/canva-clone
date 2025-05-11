@@ -70,6 +70,12 @@ class FluxSchnellHandler
         return 80;
     }
   }
+
+  async editImage(
+    options: ImageGenerationOptions,
+  ): Promise<ImageGenerationResult> {
+    throw new Error("Editing images is not supported for Flux Schnell");
+  }
 }
 
 class ReplicateGPTImageHandler
@@ -126,6 +132,12 @@ class ReplicateGPTImageHandler
   private mapQuality(quality?: ImageQuality): "low" | "medium" | "high" {
     if (!quality) return "high"; // Default to high if not specified
     return quality;
+  }
+
+  async editImage(
+    options: ImageGenerationOptions,
+  ): Promise<ImageGenerationResult> {
+    throw new Error("Editing images is not supported for Replicate GPT Image");
   }
 }
 

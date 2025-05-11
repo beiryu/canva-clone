@@ -1,7 +1,5 @@
 import { AnyModel } from "./models";
 
-export type AgentTask = "image" | "text";
-
 export type ImageGenerationModel =
   | "gpt-image-1"
   | "flux-schnell"
@@ -9,12 +7,7 @@ export type ImageGenerationModel =
 
 export type TextGenerationModel = "gpt-4";
 
-export type ModelCapability =
-  | "image-generation"
-  | "text-generation"
-  | "image-editing"
-  | "image-variations"
-  | "prompt-enhancement";
+export type ModelCapability = "image-generation" | "text-generation";
 
 export type ImageAspectRatio =
   | "1:1"
@@ -34,10 +27,10 @@ export type ImageQuality = "low" | "medium" | "high";
 // Base options interface for all generation types
 export interface BaseGenerationOptions {
   model: AnyModel;
-  prompt: string;
 }
 
 export interface ImageGenerationOptions extends BaseGenerationOptions {
+  prompt: string;
   canvasImage?: string;
   settings: {
     aspectRatio?: ImageAspectRatio;
@@ -48,7 +41,10 @@ export interface ImageGenerationOptions extends BaseGenerationOptions {
 export interface TextGenerationOptions extends BaseGenerationOptions {
   temperature?: number;
   maxTokens?: number;
-  model: TextGenerationModel;
+}
+
+export interface EnhancePromptOptions extends BaseGenerationOptions {
+  currentPrompt: string;
 }
 
 // Result interfaces
@@ -58,7 +54,6 @@ export interface ImageGenerationResult {
 
 export interface TextGenerationResult {
   text: string;
-  model: TextGenerationModel;
 }
 
 // Provider API interfaces
@@ -80,10 +75,16 @@ export interface ImageGenerationHandler extends ModelHandler {
   generateImage: (
     options: ImageGenerationOptions,
   ) => Promise<ImageGenerationResult>;
+  editImage: (
+    options: ImageGenerationOptions,
+  ) => Promise<ImageGenerationResult>;
 }
 
 export interface TextGenerationHandler extends ModelHandler {
   generateText: (
     options: TextGenerationOptions,
+  ) => Promise<TextGenerationResult>;
+  enhancePrompt: (
+    options: EnhancePromptOptions,
   ) => Promise<TextGenerationResult>;
 }

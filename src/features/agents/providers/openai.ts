@@ -2,6 +2,7 @@ import { openai } from "@/lib/openai";
 import { BaseModelHandler } from "../model-handler";
 import {
   AgentProvider,
+  EnhancePromptOptions,
   ImageAspectRatio,
   ImageGenerationHandler,
   ImageGenerationOptions,
@@ -9,6 +10,9 @@ import {
   ImageQuality,
   ModelCapability,
   ModelHandler,
+  TextGenerationHandler,
+  TextGenerationOptions,
+  TextGenerationResult,
 } from "../types";
 import { convertToFile } from "@/features/images/utils";
 // Model handler for GPT-Image-1
@@ -54,6 +58,12 @@ class GPTImageHandler
     }
   }
 
+  async editImage(
+    options: ImageGenerationOptions,
+  ): Promise<ImageGenerationResult> {
+    throw new Error("Editing images is not supported for GPT-Image-1");
+  }
+
   private mapQuality(quality?: ImageQuality): "low" | "medium" | "high" {
     if (!quality) return "high"; // Default to high if not specified
     return quality;
@@ -74,12 +84,85 @@ class GPTImageHandler
 }
 
 // GPT-4 text model handler
-class GPT4TextHandler extends BaseModelHandler {
+class GPT4TextHandler
+  extends BaseModelHandler
+  implements TextGenerationHandler
+{
   constructor() {
     super("gpt-4", ["text-generation"]);
   }
 
-  // Add text generation methods here
+  async generateText(
+    options: TextGenerationOptions,
+  ): Promise<TextGenerationResult> {
+    const { temperature = 0.7, maxTokens = 500 } = options;
+
+    let systemPrompt = "You are a helpful AI assistant.";
+    let userContent =
+      "Please generate a text prompt for an image generation model.";
+
+    try {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt,
+          },
+          {
+            role: "user",
+            content: userContent,
+          },
+        ],
+        temperature: temperature,
+        max_tokens: maxTokens,
+      });
+
+      if (!response || !response.choices || response.choices.length === 0) {
+        throw new Error("Invalid response format from OpenAI");
+      }
+
+      const generatedText = response.choices[0].message.content || "";
+
+      return { text: generatedText };
+    } catch (error) {
+      console.error("Error calling OpenAI for text generation:", error);
+      throw error;
+    }
+  }
+
+  async enhancePrompt(
+    options: EnhancePromptOptions,
+  ): Promise<TextGenerationResult> {
+    const { currentPrompt } = options;
+
+    const systemPrompt =
+      "You are an expert at crafting detailed, creative prompts for AI image generation. Your task is to enhance user prompts to make them more descriptive, visually rich, and specific, while preserving the original intent. Add artistic style details, lighting, composition elements, and other visual attributes that would make the image more compelling. Keep the enhanced prompt concise but detailed.";
+    const userContent = `Please enhance this image generation prompt: "${currentPrompt}"`;
+
+    try {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userContent },
+        ],
+        temperature: 0.7,
+        max_tokens: 500,
+      });
+
+      if (!response || !response.choices || response.choices.length === 0) {
+        throw new Error("Invalid response format from OpenAI");
+      }
+
+      const enhancedPrompt =
+        response.choices[0].message.content || currentPrompt;
+      return { text: enhancedPrompt };
+    } catch (error) {
+      console.error("Error enhancing prompt:", error);
+      throw error;
+    }
+  }
 }
 
 export class OpenAIProvider implements AgentProvider {

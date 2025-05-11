@@ -39,7 +39,7 @@ export const visualStyles: VisualStyle[] = [
   },
 ];
 
-type VisualStyle = {
+export type VisualStyle = {
   id: string;
   name: string;
   image: string;

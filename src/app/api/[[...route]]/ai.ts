@@ -8,6 +8,7 @@ import {
   ImageAspectRatio,
   ImageGenerationModel,
   ImageQuality,
+  TextGenerationModel,
 } from "@/features/agents/types";
 import { db } from "@/db/drizzle";
 import { generatedImages, uploadedImages } from "@/db/schema";
@@ -173,6 +174,47 @@ const app = new Hono()
       } catch (error) {
         console.error("Image generation error:", error);
         return c.json({ error: "Failed to generate image" }, 500);
+      }
+    },
+  )
+  .post(
+    "/agent-enhance-prompt",
+    verifyAuth(),
+    zValidator(
+      "json",
+      z
+        .object({
+          model: z.string(),
+          prompt: z.string(),
+        })
+        .default({
+          model: "gpt-4",
+          prompt: "",
+        }),
+    ),
+    async (c) => {
+      let { model, prompt } = c.req.valid("json");
+
+      const auth = c.get("authUser");
+
+      if (!auth.token?.id) {
+        return c.json({ error: "Unauthorized" }, 401);
+      }
+
+      const agentManager = new AgentManager();
+
+      try {
+        const result = await agentManager.enhancePrompt({
+          model: model as TextGenerationModel,
+          currentPrompt: prompt,
+        });
+
+        return c.json({
+          data: result,
+        });
+      } catch (error) {
+        console.error("Prompt enhancement error:", error);
+        return c.json({ error: "Failed to enhance prompt" }, 500);
       }
     },
   );

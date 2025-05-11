@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   useVisualStyle,
+  VisualStyle,
   visualStyles,
 } from "@/features/editor/store/use-visual-style";
 
@@ -23,6 +24,11 @@ export default function VisualStylesDrawer() {
     isStyleDrawerOpen,
     setIsStyleDrawerOpen,
   } = useVisualStyle();
+
+  const handleStyleClick = (style: VisualStyle): void => {
+    setSelectedStyle(style);
+    setIsStyleDrawerOpen(false);
+  };
 
   return (
     <Drawer
@@ -57,7 +63,7 @@ export default function VisualStylesDrawer() {
                       ? "ring-4 ring-[#c4ff33]"
                       : "hover:opacity-90",
                   )}
-                  onClick={() => setSelectedStyle(style)}
+                  onClick={() => handleStyleClick(style)}
                   aria-label={`Select ${style.name} style`}
                 >
                   <Image
