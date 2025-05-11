@@ -3,10 +3,11 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { EyeOff, Trash2, Edit, Download } from "lucide-react";
+import { Edit, Download, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { visualStyles } from "../store/use-visual-style";
 import { getImageUrl } from "@/features/images/utils";
+import { useImageDownload } from "@/features/images/hooks/use-image-download";
 
 interface ImageCardProps {
   image: any;
@@ -14,6 +15,14 @@ interface ImageCardProps {
 
 export function ImageCard({ image }: ImageCardProps) {
   const style = visualStyles.find((style) => style.id === image.style);
+
+  const imageUrl = getImageUrl(image.fullPath);
+
+  const { downloadImage, isDownloading } = useImageDownload();
+
+  const handleDownload = () => {
+    downloadImage(imageUrl, `SketchpadAI-${Date.now()}.webp`);
+  };
 
   return (
     <Card className="overflow-hidden bg-black border-card rounded-lg">
@@ -38,7 +47,7 @@ export function ImageCard({ image }: ImageCardProps) {
           {image.id !== "id" && (
             <div className="w-full h-full transition-opacity duration-300 ease-in-out">
               <Image
-                src={getImageUrl(image.fullPath) || "/placeholder.svg"}
+                src={imageUrl}
                 alt={image.prompt || "Generated image"}
                 fill
                 className="object-contain"
@@ -60,8 +69,17 @@ export function ImageCard({ image }: ImageCardProps) {
               >
                 <Edit className="h-4 w-4 mr-1" /> Edit
               </Button>
-              <Button variant="default" size="sm" disabled={image.id === "id"}>
-                <Download className="h-4 w-4" />
+              <Button
+                variant="default"
+                size="sm"
+                disabled={image.id === "id" || isDownloading}
+                onClick={handleDownload}
+              >
+                {isDownloading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
               </Button>
             </div>
           )}

@@ -120,8 +120,6 @@ export const GenerateSidebar = ({
         },
         {
           onSuccess: ({ data }) => {
-            console.log(data);
-
             handleFormChange("prompt", data.text);
             toast.success("Prompt enhanced successfully");
           },
