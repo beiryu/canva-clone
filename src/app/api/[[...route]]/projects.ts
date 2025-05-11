@@ -268,56 +268,6 @@ const app = new Hono()
 
       return c.json({ data: images });
     },
-  )
-
-  // Delete a generated image
-  .delete(
-    "/:projectId/images/:imageId",
-    verifyAuth(),
-    zValidator(
-      "param",
-      z.object({
-        projectId: z.string(),
-        imageId: z.string(),
-      }),
-    ),
-    async (c) => {
-      const auth = c.get("authUser");
-      const { projectId, imageId } = c.req.valid("param");
-
-      if (!auth.token?.id) {
-        return c.json({ error: "Unauthorized" }, 401);
-      }
-
-      // Verify the user owns the project
-      const projectData = await db
-        .select()
-        .from(projects)
-        .where(
-          and(eq(projects.id, projectId), eq(projects.userId, auth.token.id)),
-        );
-
-      if (projectData.length === 0) {
-        return c.json({ error: "Project not found" }, 404);
-      }
-
-      // Delete the image
-      const deletedImage = await db
-        .delete(generatedImages)
-        .where(
-          and(
-            eq(generatedImages.id, imageId),
-            eq(generatedImages.projectId, projectId),
-          ),
-        )
-        .returning();
-
-      if (deletedImage.length === 0) {
-        return c.json({ error: "Image not found" }, 404);
-      }
-
-      return c.json({ data: { id: imageId } });
-    },
   );
 
 export default app;
