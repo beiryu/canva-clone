@@ -31,7 +31,7 @@ export const useAgentGenerateImage = () => {
     onMutate: (json) => {
       queryClient.setQueryData(
         ["project-images", { projectId: json.projectId }],
-        (oldData: any) => {
+        (oldData) => {
           const newLoadingImage = {
             id: "id",
             projectId: json.projectId,
@@ -58,7 +58,17 @@ export const useAgentGenerateImage = () => {
 
       toast.success("Image generated successfully");
     },
-    onError: () => {
+    onError: (error, variables) => {
+      queryClient.setQueryData(
+        ["project-images", { projectId: variables.projectId }],
+        (oldData) => {
+          if (oldData && Array.isArray(oldData)) {
+            return oldData.filter((image) => image.id !== "id");
+          }
+          return oldData;
+        },
+      );
+
       toast.error("Failed to generate image");
     },
   });

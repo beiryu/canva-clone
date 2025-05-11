@@ -8,21 +8,6 @@ export const visualStyles: VisualStyle[] = [
     image: "/styles-editor/nature.png",
   },
   {
-    id: "3d-render",
-    name: "3D Render",
-    image: "/styles-editor/3d.png",
-  },
-  {
-    id: "cartoon",
-    name: "Cartoon",
-    image: "/styles-editor/cartoon.png",
-  },
-  {
-    id: "fantasy",
-    name: "Fantasy",
-    image: "/styles-editor/fantasy.png",
-  },
-  {
     id: "pixel",
     name: "Pixel",
     image: "/styles-editor/pixel.png",
@@ -36,6 +21,16 @@ export const visualStyles: VisualStyle[] = [
     id: "sketch",
     name: "Sketch",
     image: "/styles-editor/sketch.png",
+  },
+  {
+    id: "cartoon",
+    name: "Cartoon",
+    image: "/styles-editor/cartoon.png",
+  },
+  {
+    id: "fantasy",
+    name: "Fantasy",
+    image: "/styles-editor/fantasy.png",
   },
 ];
 

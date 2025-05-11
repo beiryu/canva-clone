@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 import { visualStyles } from "../store/use-visual-style";
 import { getImageUrl } from "@/features/images/utils";
 import { useImageDownload } from "@/features/images/hooks/use-image-download";
+import { useImageLoading } from "@/features/editor/hooks/use-image-loading";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ImageCardProps {
   image: any;
@@ -16,6 +18,12 @@ interface ImageCardProps {
 
 export function ImageCard({ image }: ImageCardProps) {
   const style = visualStyles.find((style) => style.id === image.style);
+
+  const {
+    isLoading: isImageLoading,
+    progress: imageLoadProgress,
+    handleImageLoad,
+  } = useImageLoading();
 
   const imageUrl = getImageUrl(image.fullPath);
 
@@ -35,31 +43,86 @@ export function ImageCard({ image }: ImageCardProps) {
       <div className="flex flex-col md:flex-row">
         <div className="relative w-full md:w-3/4 h-[300px] md:h-[400px]">
           {/* Status indicator */}
-          {image.id === "id" && (
-            <div className="absolute top-3 left-3 z-10 bg-black/70 text-primary px-3 py-1 rounded-full text-sm font-medium">
-              In progress
-            </div>
-          )}
+          <AnimatePresence>
+            {image.id === "id" && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="absolute top-3 left-3 z-10 bg-black/70 text-primary px-3 py-1 rounded-full text-sm font-medium"
+              >
+                <span className="inline-flex items-center">
+                  <span className="mr-4 relative h-2 w-2 flex flex-col items-center justify-center">
+                    <span className="ml-4 animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                  </span>
+                  In progress
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Image content */}
-          {image.id === "id" && (
-            <div className="w-full h-full bg-gradient-to-r from-[#8a5a5a] to-[#8a7a5a] animate-pulse">
-              <div className="flex items-center justify-center h-full">
-                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-              </div>
-            </div>
-          )}
-
-          {image.id !== "id" && (
-            <div className="w-full h-full transition-opacity duration-300 ease-in-out">
-              <Image
-                src={imageUrl}
-                alt={image.prompt || "Generated image"}
-                fill
-                className="object-contain"
-              />
-            </div>
-          )}
+          <AnimatePresence mode="wait">
+            {image.id === "id" ? (
+              <motion.div
+                key="loading"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="w-full h-full bg-gradient-to-r from-[#8a5a5a] to-[#8a7a5a] rounded-lg"
+              >
+                <div className="flex flex-col items-center justify-center h-full">
+                  <div className="w-16 h-16 relative">
+                    <div className="absolute inset-0 border-4 border-primary/30 rounded-full"></div>
+                    <div className="absolute inset-0 border-4 border-t-primary border-r-primary border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+                  </div>
+                  <p className="mt-4 text-white/80 text-sm animate-pulse">
+                    Generating your masterpiece...
+                  </p>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="loaded"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="w-full h-full transition-opacity duration-300 ease-in-out rounded-lg"
+              >
+                {isImageLoading && (
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/90 to-black/70 backdrop-blur-sm z-10">
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <div className="w-full max-w-[80%] mb-4">
+                        <div className="h-1 w-full bg-gray-800 rounded-full overflow-hidden">
+                          <motion.div
+                            className="h-full bg-primary"
+                            initial={{ width: "0%" }}
+                            animate={{ width: `${imageLoadProgress}%` }}
+                            transition={{ type: "spring", stiffness: 50 }}
+                          />
+                        </div>
+                        <p className="text-center mt-2 text-sm text-gray-400">
+                          Loading image... {Math.round(imageLoadProgress)}%
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <Image
+                  src={imageUrl}
+                  alt={image.prompt || "Generated image"}
+                  fill
+                  className={cn(
+                    "object-contain rounded-lg",
+                    isImageLoading ? "opacity-0" : "opacity-100",
+                  )}
+                  onLoadingComplete={handleImageLoad}
+                  priority
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Action buttons */}
           {image.id !== "id" && (
