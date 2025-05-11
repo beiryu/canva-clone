@@ -32,6 +32,7 @@ export interface BaseGenerationOptions {
 export interface ImageGenerationOptions extends BaseGenerationOptions {
   prompt: string;
   canvasImage?: string;
+  style?: string;
   settings: {
     aspectRatio?: ImageAspectRatio;
     quality?: ImageQuality;

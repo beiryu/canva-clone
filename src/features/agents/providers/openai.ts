@@ -27,14 +27,14 @@ class GPTImageHandler
   async generateImage(
     options: ImageGenerationOptions,
   ): Promise<ImageGenerationResult> {
-    const { prompt, settings } = options;
+    const { prompt, settings, style } = options;
 
     const { aspectRatio = "1:1", quality = "high" } = settings;
 
     try {
       const input = {
         model: "gpt-image-1",
-        prompt: prompt,
+        prompt: this.formatPromptWithStyle(prompt, style),
         size: this.mapAspectRatioToSize(aspectRatio),
         quality: this.mapQuality(quality),
       };
@@ -62,6 +62,28 @@ class GPTImageHandler
     options: ImageGenerationOptions,
   ): Promise<ImageGenerationResult> {
     throw new Error("Editing images is not supported for GPT-Image-1");
+  }
+
+  private formatPromptWithStyle(prompt: string, style?: string): string {
+    if (!style) return prompt;
+
+    switch (style) {
+      case "3d-render":
+        return `${prompt}, as a detailed 3D render with realistic lighting, shadows, and textures`;
+      case "cartoon":
+        return `${prompt}, in a vibrant cartoon style with bold outlines and exaggerated features`;
+      case "fantasy":
+        return `${prompt}, in a magical fantasy style with ethereal lighting and mystical elements`;
+      case "pixel":
+        return `${prompt}, in pixel art style with limited color palette and visible pixels`;
+      case "retro":
+        return `${prompt}, in vintage retro style with nostalgic elements and muted colors`;
+      case "sketch":
+        return `${prompt}, as a hand-drawn sketch with pencil strokes and minimal shading`;
+      case "natural":
+      default:
+        return prompt;
+    }
   }
 
   private mapQuality(quality?: ImageQuality): "low" | "medium" | "high" {

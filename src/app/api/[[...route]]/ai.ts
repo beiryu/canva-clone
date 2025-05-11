@@ -137,6 +137,7 @@ const app = new Hono()
         const result = await agentManager.generateImage({
           model: model as ImageGenerationModel,
           prompt,
+          style,
           canvasImage,
           settings: {
             aspectRatio: aspectRatio as ImageAspectRatio,

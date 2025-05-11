@@ -24,12 +24,12 @@ class FluxSchnellHandler
     options: ImageGenerationOptions,
   ): Promise<ImageGenerationResult> {
     try {
-      const { prompt, settings } = options;
+      const { prompt, settings, style } = options;
 
       const { aspectRatio = "1:1", quality = "medium" } = settings;
 
       const input = {
-        prompt,
+        prompt: this.formatPromptWithStyle(prompt, style),
         aspect_ratio: aspectRatio,
         output_format: "webp",
         output_quality: this.mapQuality(quality),
@@ -55,6 +55,28 @@ class FluxSchnellHandler
     } catch (error) {
       console.error("Error with Replicate API:", error);
       throw error;
+    }
+  }
+
+  private formatPromptWithStyle(prompt: string, style?: string): string {
+    if (!style) return prompt;
+
+    switch (style) {
+      case "3d-render":
+        return `${prompt}, as a detailed 3D render with realistic lighting, shadows, and textures`;
+      case "cartoon":
+        return `${prompt}, in a vibrant cartoon style with bold outlines and exaggerated features`;
+      case "fantasy":
+        return `${prompt}, in a magical fantasy style with ethereal lighting and mystical elements`;
+      case "pixel":
+        return `${prompt}, in pixel art style with limited color palette and visible pixels`;
+      case "retro":
+        return `${prompt}, in vintage retro style with nostalgic elements and muted colors`;
+      case "sketch":
+        return `${prompt}, as a hand-drawn sketch with pencil strokes and minimal shading`;
+      case "natural":
+      default:
+        return prompt;
     }
   }
 
@@ -90,12 +112,12 @@ class ReplicateGPTImageHandler
     options: ImageGenerationOptions,
   ): Promise<ImageGenerationResult> {
     try {
-      const { prompt, settings, canvasImage } = options;
+      const { prompt, settings, canvasImage, style } = options;
 
       const { aspectRatio = "1:1", quality = "medium" } = settings;
 
       const input = {
-        prompt,
+        prompt: this.formatPromptWithStyle(prompt, style),
         quality: this.mapQuality(quality),
         aspect_ratio: aspectRatio,
         input_images: canvasImage ? [canvasImage] : [],
@@ -126,6 +148,28 @@ class ReplicateGPTImageHandler
     } catch (error) {
       console.error("Error with Replicate API:", error);
       throw error;
+    }
+  }
+
+  private formatPromptWithStyle(prompt: string, style?: string): string {
+    if (!style) return prompt;
+
+    switch (style) {
+      case "3d-render":
+        return `${prompt}, as a detailed 3D render with realistic lighting, shadows, and textures`;
+      case "cartoon":
+        return `${prompt}, in a vibrant cartoon style with bold outlines and exaggerated features`;
+      case "fantasy":
+        return `${prompt}, in a magical fantasy style with ethereal lighting and mystical elements`;
+      case "pixel":
+        return `${prompt}, in pixel art style with limited color palette and visible pixels`;
+      case "retro":
+        return `${prompt}, in vintage retro style with nostalgic elements and muted colors`;
+      case "sketch":
+        return `${prompt}, as a hand-drawn sketch with pencil strokes and minimal shading`;
+      case "natural":
+      default:
+        return prompt;
     }
   }
 

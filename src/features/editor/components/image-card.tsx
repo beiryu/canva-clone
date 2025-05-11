@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Edit, Download, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { visualStyles } from "../store/use-visual-style";
 import { getImageUrl } from "@/features/images/utils";
@@ -22,6 +23,11 @@ export function ImageCard({ image }: ImageCardProps) {
 
   const handleDownload = () => {
     downloadImage(imageUrl, `SketchpadAI-${Date.now()}.webp`);
+  };
+
+  const handleCopyPrompt = () => {
+    navigator.clipboard.writeText(image.prompt);
+    toast.success("Prompt copied to clipboard");
   };
 
   return (
@@ -92,7 +98,11 @@ export function ImageCard({ image }: ImageCardProps) {
             {image.prompt && (
               <div>
                 <p className="text-xs text-gray-500 mb-1">Prompt</p>
-                <p className="text-sm text-gray-300 line-clamp-6">
+                <p
+                  className="text-sm text-gray-300 line-clamp-6 cursor-pointer hover:text-primary transition-colors"
+                  onClick={handleCopyPrompt}
+                  title="Click to copy prompt"
+                >
                   {image.prompt}
                 </p>
               </div>
@@ -101,14 +111,19 @@ export function ImageCard({ image }: ImageCardProps) {
             {/* Style */}
             {style && (
               <div>
-                <p className="text-xs text-gray-500 mb-1">Style</p>
-                <Image
-                  src={style.image}
-                  alt={style.name}
-                  width={50}
-                  height={50}
-                  className="rounded-md"
-                />
+                <p className="text-xs text-gray-500 mb-1">Visual Style</p>
+                <div className="flex items-center space-x-2">
+                  <Image
+                    src={style.image}
+                    alt={style.name}
+                    width={50}
+                    height={50}
+                    className="rounded-md"
+                  />
+                  <span className="text-sm font-medium text-primary">
+                    {style.name}
+                  </span>
+                </div>
               </div>
             )}
 
