@@ -43,7 +43,7 @@ const app = new Hono()
       const agentManager = new AgentManager();
 
       const result = await agentManager.removeBg({
-        model: "851-labs/background-remover",
+        model: "labs/background-remover",
         image,
       });
 

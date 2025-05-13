@@ -1,3 +1,4 @@
+import { convertToFile } from "@/features/images/utils";
 import { openai } from "@/lib/openai";
 import { BaseModelHandler } from "../model-handler";
 import {
@@ -14,14 +15,13 @@ import {
   TextGenerationOptions,
   TextGenerationResult,
 } from "../types";
-import { convertToFile } from "@/features/images/utils";
 import {
   createSketchGuidanceInstruction,
   createStyleInstruction,
 } from "../utils";
 
 // Model handler for GPT-Image-1
-class GPTImageHandler
+class GPTImage1Handler
   extends BaseModelHandler
   implements ImageGenerationHandler
 {
@@ -99,52 +99,19 @@ class GPTImageHandler
   }
 }
 
-// GPT-4 text model handler
-class GPT4TextHandler
+// GPT-4.1-mini text model handler
+class GPT41MiniTextHandler
   extends BaseModelHandler
   implements TextGenerationHandler
 {
   constructor() {
-    super("gpt-4", ["text-generation"]);
+    super("gpt-4.1-mini", ["text-generation"]);
   }
 
   async generateText(
     options: TextGenerationOptions,
   ): Promise<TextGenerationResult> {
-    const { temperature = 0.7, maxTokens = 500 } = options;
-
-    let systemPrompt = "You are a helpful AI assistant.";
-    let userContent =
-      "Please generate a text prompt for an image generation model.";
-
-    try {
-      const response = await openai.chat.completions.create({
-        model: "gpt-4",
-        messages: [
-          {
-            role: "system",
-            content: systemPrompt,
-          },
-          {
-            role: "user",
-            content: userContent,
-          },
-        ],
-        temperature: temperature,
-        max_tokens: maxTokens,
-      });
-
-      if (!response || !response.choices || response.choices.length === 0) {
-        throw new Error("Invalid response format from OpenAI");
-      }
-
-      const generatedText = response.choices[0].message.content || "";
-
-      return { text: generatedText };
-    } catch (error) {
-      console.error("Error calling OpenAI for text generation:", error);
-      throw error;
-    }
+    throw new Error("Generating text is not supported for OpenAI GPT-4.1-mini");
   }
 
   async enhancePrompt(
@@ -153,18 +120,21 @@ class GPT4TextHandler
     const { currentPrompt } = options;
 
     const systemPrompt =
-      "You are an expert at crafting detailed, creative prompts for AI image generation. Your task is to enhance user prompts to make them more descriptive, visually rich, and specific, while preserving the original intent. Add artistic style details, lighting, composition elements, and other visual attributes that would make the image more compelling. Keep the enhanced prompt concise but detailed.";
-    const userContent = `Please enhance this image generation prompt: "${currentPrompt}"`;
+      "You are an expert AI prompt engineer specializing in modern, cutting-edge image generation. Your task is to transform simple user prompts into highly detailed, visually striking descriptions that leverage the latest capabilities of modern AI image models. Focus on enhancing with: detailed subjects, precise lighting conditions, composition elements, camera perspectives, color palettes, mood/atmosphere, and technical specifications. Preserve the original intent while making the prompt incredibly vivid and specific.";
+    const userContent = `Enhance this image prompt: "${currentPrompt}"`;
 
     try {
       const response = await openai.chat.completions.create({
-        model: "gpt-4",
+        model: "gpt-4.1-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userContent },
         ],
-        temperature: 0.7,
+        temperature: 0.6,
         max_tokens: 500,
+        top_p: 0.9,
+        frequency_penalty: 0.2,
+        presence_penalty: 0.1,
       });
 
       if (!response || !response.choices || response.choices.length === 0) {
@@ -192,8 +162,8 @@ export class OpenAIProvider implements AgentProvider {
 
   constructor() {
     // Initialize handlers for each model
-    this.registerHandler(new GPTImageHandler());
-    this.registerHandler(new GPT4TextHandler());
+    this.registerHandler(new GPTImage1Handler());
+    this.registerHandler(new GPT41MiniTextHandler());
   }
 
   private registerHandler(handler: ModelHandler): void {

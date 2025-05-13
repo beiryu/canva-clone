@@ -3,6 +3,7 @@ import { replicate } from "@/lib/replicate";
 import { BaseModelHandler } from "../model-handler";
 import {
   AgentProvider,
+  BackgroundRemoverHandler,
   ImageGenerationHandler,
   ImageGenerationOptions,
   ImageGenerationResult,
@@ -95,7 +96,7 @@ class FluxSchnellHandler
   }
 }
 
-class ReplicateGPTImageHandler
+class GPTImage1Handler
   extends BaseModelHandler
   implements ImageGenerationHandler
 {
@@ -171,12 +172,12 @@ class ReplicateGPTImageHandler
 }
 
 // Model handler for Flux Pro Ultra
-class FluxProUltraHandler
+class Flux11ProUltraHandler
   extends BaseModelHandler
   implements ImageGenerationHandler
 {
   constructor() {
-    super("flux-pro-ultra", ["image-generation"]);
+    super("flux-1.1-pro-ultra", ["image-generation"]);
   }
 
   async generateImage(
@@ -235,12 +236,12 @@ class FluxProUltraHandler
 }
 
 // Model handler for Background Remover
-class BackgroundRemoverHandler
+class LabsBackgroundRemoverHandler
   extends BaseModelHandler
   implements BackgroundRemoverHandler
 {
   constructor() {
-    super("851-labs/background-remover", ["background-remover"]);
+    super("labs/background-remover", ["background-remover"]);
   }
 
   async removeBg(options: RemoveBgOptions): Promise<RemoveBgResult> {
@@ -280,16 +281,19 @@ class BackgroundRemoverHandler
 
 export class ReplicateProvider implements AgentProvider {
   name = "replicate";
-  supportedCapabilities: ModelCapability[] = ["image-generation"];
+  supportedCapabilities: ModelCapability[] = [
+    "image-generation",
+    "background-remover",
+  ];
 
   private modelHandlers: Map<string, ModelHandler> = new Map();
 
   constructor() {
     // Initialize handlers for each model
     this.registerHandler(new FluxSchnellHandler());
-    this.registerHandler(new ReplicateGPTImageHandler());
-    this.registerHandler(new FluxProUltraHandler());
-    this.registerHandler(new BackgroundRemoverHandler());
+    this.registerHandler(new GPTImage1Handler());
+    this.registerHandler(new Flux11ProUltraHandler());
+    this.registerHandler(new LabsBackgroundRemoverHandler());
   }
 
   private registerHandler(handler: ModelHandler): void {

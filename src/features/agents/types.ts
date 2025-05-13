@@ -4,11 +4,11 @@ export type ImageGenerationModel =
   | "o/gpt-image-1"
   | "flux-schnell"
   | "r/gpt-image-1"
-  | "flux-pro-ultra";
+  | "flux-1.1-pro-ultra";
 
-export type TextGenerationModel = "gpt-4";
+export type TextGenerationModel = "gpt-4.1-mini";
 
-export type BackgroundRemoverModel = "851-labs/background-remover";
+export type BackgroundRemoverModel = "labs/background-remover";
 
 export type ModelCapability =
   | "image-generation"

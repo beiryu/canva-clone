@@ -40,7 +40,7 @@ const productionModels: [AnyModel, ModelConfig][] = [
     },
   ],
   [
-    "flux-pro-ultra",
+    "flux-1.1-pro-ultra",
     {
       provider: "replicate",
       name: "Flux Pro Ultra",
@@ -65,7 +65,7 @@ const productionModels: [AnyModel, ModelConfig][] = [
     },
   ],
   [
-    "gpt-4",
+    "gpt-4.1-mini",
     {
       provider: "openai",
       name: "GPT-4",
@@ -78,7 +78,7 @@ const productionModels: [AnyModel, ModelConfig][] = [
     },
   ],
   [
-    "851-labs/background-remover",
+    "labs/background-remover",
     {
       provider: "replicate",
       name: "Background Remover",
