@@ -1,5 +1,5 @@
 import { ModelConfig, modelRegistry } from "./models";
-import { ModelCapability } from "./types";
+import { ModelCapability, SketchGuidanceStrictness } from "./types";
 
 export const getModelsByCapability = (
   capability: ModelCapability,
@@ -27,26 +27,52 @@ export const getModelsByProvider = (provider: string): ModelConfig[] => {
   return models;
 };
 
-export const formatPromptWithStyle = (
-  prompt: string,
-  style?: string,
-): string => {
-  if (!style) return prompt;
+export const createStyleInstruction = (style: string): string => {
+  let instructions = "";
 
   switch (style) {
     case "cartoon":
-      return `${prompt}, vibrant cartoon style with bold outlines, flat colors, exaggerated features, comic book aesthetic, cell shading, expressive character design, clean vector-like appearance, Disney/Pixar inspired`;
+      instructions = `Vibrant cartoon style with bold outlines, flat colors, exaggerated features, comic book aesthetic, cell shading, expressive character design, clean vector-like appearance, Disney/Pixar inspired`;
+      break;
     case "fantasy":
-      return `${prompt}, epic fantasy artwork, magical atmosphere, ethereal lighting, mystical elements, detailed environment, dramatic composition, vibrant colors, high detail, dreamlike quality`;
+      instructions = `Epic fantasy artwork, magical atmosphere, ethereal lighting, mystical elements, detailed environment, dramatic composition, vibrant colors, high detail, dreamlike quality`;
+      break;
     case "pixel":
-      return `${prompt}, detailed pixel art, 16-bit style, limited color palette, visible pixels, retro game aesthetic, isometric perspective, clean pixel edges, nostalgic gaming style, inspired by classic SNES and arcade games`;
+      instructions = `Detailed pixel art, 16-bit style, limited color palette, visible pixels, retro game aesthetic, isometric perspective, clean pixel edges, nostalgic gaming style, inspired by classic SNES and arcade games`;
+      break;
     case "retro":
-      return `${prompt}, vintage retro style, 1970s/1980s aesthetic, nostalgic elements, muted color palette with warm tones, film grain texture, analog photography feel, vaporwave elements, synthwave lighting, old-school design`;
+      instructions = `Vintage retro style, 1970s/1980s aesthetic, nostalgic elements, muted color palette with warm tones, film grain texture, analog photography feel, vaporwave elements, synthwave lighting, old-school design`;
+      break;
     case "sketch":
-      return `${prompt}, detailed hand-drawn sketch, pencil strokes, hatching technique, gestural linework, minimal shading, artistic composition, sketchbook aesthetic, loose drawing style, black and white, high contrast`;
+      instructions = `Detailed hand-drawn sketch, pencil strokes, hatching technique, gestural linework, minimal shading, artistic composition, sketchbook aesthetic, loose drawing style, black and white, high contrast`;
+      break;
     case "nature":
-      return `${prompt}, breathtaking nature photography, golden hour lighting, vibrant natural colors, high detail landscape, atmospheric perspective, shallow depth of field, National Geographic style, pristine wilderness, dramatic natural scenery`;
-    default:
-      return prompt;
+      instructions = `Breathtaking nature photography, golden hour lighting, vibrant natural colors, high detail landscape, atmospheric perspective, shallow depth of field, National Geographic style, pristine wilderness, dramatic natural scenery`;
+      break;
   }
+
+  return instructions;
+};
+
+export const createSketchGuidanceInstruction = (
+  strictness: SketchGuidanceStrictness,
+): string => {
+  let instructions = "Use the provided sketch as a ";
+
+  switch (strictness) {
+    case "strict":
+      instructions +=
+        "strict blueprint. Follow the exact composition, layout, and proportions of the sketch. Preserve all distinct elements and maintain the color palette where colors are present.";
+      break;
+    case "moderate":
+      instructions +=
+        "general guide. Maintain the overall composition and key elements while allowing artistic interpretation. Keep the main elements recognizable but feel free to enhance details and colors.";
+      break;
+    case "loose":
+      instructions +=
+        "loose inspiration. Capture the essence and concept of the sketch while having creative freedom with details, composition, and colors. Use the sketch as a starting point but feel free to expand upon it.";
+      break;
+  }
+
+  return instructions;
 };

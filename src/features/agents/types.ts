@@ -1,9 +1,10 @@
 import { AnyModel } from "./models";
 
 export type ImageGenerationModel =
-  | "gpt-image-1"
+  | "o/gpt-image-1"
   | "flux-schnell"
-  | "replicate/gpt-image";
+  | "r/gpt-image-1"
+  | "flux-pro-ultra";
 
 export type TextGenerationModel = "gpt-4";
 
@@ -24,6 +25,8 @@ export type ImageAspectRatio =
 
 export type ImageQuality = "low" | "medium" | "high";
 
+export type SketchGuidanceStrictness = "loose" | "moderate" | "strict";
+
 // Base options interface for all generation types
 export interface BaseGenerationOptions {
   model: AnyModel;
@@ -36,6 +39,7 @@ export interface ImageGenerationOptions extends BaseGenerationOptions {
   settings: {
     aspectRatio?: ImageAspectRatio;
     quality?: ImageQuality;
+    strictness?: SketchGuidanceStrictness;
   };
 }
 

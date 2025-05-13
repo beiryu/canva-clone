@@ -15,6 +15,13 @@
       "when": 1746774635154,
       "tag": "0001_fluffy_tempest",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1747071553209,
+      "tag": "0002_greedy_blazing_skull",
+      "breakpoints": true
     }
   ]
 }

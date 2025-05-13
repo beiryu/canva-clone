@@ -10,7 +10,10 @@ import {
   ModelCapability,
   ModelHandler,
 } from "../types";
-import { formatPromptWithStyle } from "../utils";
+import {
+  createSketchGuidanceInstruction,
+  createStyleInstruction,
+} from "../utils";
 
 // Model handler for Flux Schnell
 class FluxSchnellHandler
@@ -25,12 +28,23 @@ class FluxSchnellHandler
     options: ImageGenerationOptions,
   ): Promise<ImageGenerationResult> {
     try {
-      const { prompt, settings, style } = options;
+      const { prompt, settings, style = "nature" } = options;
 
-      const { aspectRatio = "1:1", quality = "medium" } = settings;
+      const {
+        aspectRatio = "1:1",
+        quality = "medium",
+        strictness = "moderate",
+      } = settings;
+
+      const guidanceInstruction = createSketchGuidanceInstruction(strictness);
+      const styleInstruction = createStyleInstruction(style);
 
       const input = {
-        prompt: formatPromptWithStyle(prompt, style),
+        prompt: `
+        [SKETCH GUIDANCE] ${guidanceInstruction}
+        [STYLE GUIDANCE] ${styleInstruction}
+        [USER PROMPT] ${prompt}
+        `,
         aspect_ratio: aspectRatio,
         output_format: "webp",
         output_quality: this.mapQuality(quality),
@@ -84,19 +98,31 @@ class ReplicateGPTImageHandler
   implements ImageGenerationHandler
 {
   constructor() {
-    super("replicate/gpt-image", ["image-generation"]);
+    super("r/gpt-image-1", ["image-generation"]);
   }
 
   async generateImage(
     options: ImageGenerationOptions,
   ): Promise<ImageGenerationResult> {
     try {
-      const { prompt, settings, canvasImage, style } = options;
+      const { prompt, settings, canvasImage, style = "nature" } = options;
 
-      const { aspectRatio = "1:1", quality = "medium" } = settings;
+      const {
+        aspectRatio = "1:1",
+        quality = "medium",
+        strictness = "moderate",
+      } = settings;
+
+      // Create prompt with sketch guidance if available
+      const guidanceInstruction = createSketchGuidanceInstruction(strictness);
+      const styleInstruction = createStyleInstruction(style);
 
       const input = {
-        prompt: formatPromptWithStyle(prompt, style),
+        prompt: `
+        [SKETCH GUIDANCE] ${guidanceInstruction}
+        [STYLE GUIDANCE] ${styleInstruction}
+        [USER PROMPT] ${prompt}
+        `,
         quality: this.mapQuality(quality),
         aspect_ratio: aspectRatio,
         input_images: canvasImage ? [canvasImage] : [],
@@ -142,6 +168,83 @@ class ReplicateGPTImageHandler
   }
 }
 
+// Model handler for Flux Pro Ultra
+class FluxProUltraHandler
+  extends BaseModelHandler
+  implements ImageGenerationHandler
+{
+  constructor() {
+    super("flux-pro-ultra", ["image-generation"]);
+  }
+
+  async generateImage(
+    options: ImageGenerationOptions,
+  ): Promise<ImageGenerationResult> {
+    try {
+      const { prompt, settings, style = "nature" } = options;
+
+      const { aspectRatio = "1:1", strictness = "moderate" } = settings;
+
+      // Create prompt with sketch guidance if available
+      const guidanceInstruction = createSketchGuidanceInstruction(strictness);
+      const styleInstruction = createStyleInstruction(style);
+
+      const input = {
+        prompt: `
+        [SKETCH GUIDANCE] ${guidanceInstruction}
+        [STYLE GUIDANCE] ${styleInstruction}
+        [USER PROMPT] ${prompt}
+        `,
+        aspect_ratio: aspectRatio,
+        output_format: "jpg",
+      };
+
+      console.log("Generating image with Flux Pro Ultra", input);
+
+      const output = await replicate.run(
+        "black-forest-labs/flux-1.1-pro-ultra",
+        {
+          input,
+        },
+      );
+
+      const result = output as unknown as string;
+
+      if (!result) {
+        throw new Error("Invalid output from Replicate");
+      }
+
+      const file = await convertToFile(result, {
+        filePrefix: "flux-pro-ultra",
+      });
+
+      return { file };
+    } catch (error) {
+      console.error("Error with Replicate API:", error);
+      throw error;
+    }
+  }
+
+  private mapQuality(quality: ImageQuality): number {
+    switch (quality) {
+      case "low":
+        return 60;
+      case "medium":
+        return 80;
+      case "high":
+        return 100;
+      default:
+        return 80;
+    }
+  }
+
+  async editImage(
+    options: ImageGenerationOptions,
+  ): Promise<ImageGenerationResult> {
+    throw new Error("Editing images is not supported for Flux Schnell");
+  }
+}
+
 export class ReplicateProvider implements AgentProvider {
   name = "replicate";
   supportedCapabilities: ModelCapability[] = ["image-generation"];
@@ -152,6 +255,7 @@ export class ReplicateProvider implements AgentProvider {
     // Initialize handlers for each model
     this.registerHandler(new FluxSchnellHandler());
     this.registerHandler(new ReplicateGPTImageHandler());
+    this.registerHandler(new FluxProUltraHandler());
   }
 
   private registerHandler(handler: ModelHandler): void {

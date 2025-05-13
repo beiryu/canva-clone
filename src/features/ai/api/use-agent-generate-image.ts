@@ -39,6 +39,7 @@ export const useAgentGenerateImage = () => {
             fullPath: "",
             prompt: json.prompt,
             style: json.style,
+            model: json.model,
             settings: json.settings,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),

@@ -153,6 +153,7 @@ export const generatedImages = pgTable("generated_image", {
   fullPath: text("fullPath").notNull(),
   prompt: text("prompt"),
   style: text("style"),
+  model: text("model"),
   settings: jsonb("settings").notNull(),
   createdAt: timestamp("createdAt", { mode: "date" }).notNull(),
   updatedAt: timestamp("updatedAt", { mode: "date" }).notNull(),

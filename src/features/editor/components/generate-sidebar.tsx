@@ -66,7 +66,7 @@ export const GenerateSidebar = ({
   onClose,
   projectId,
 }: GenerateSidebarProps) => {
-  const [model, setModel] = useState<ImageGenerationModel>("flux-schnell");
+  const [model, setModel] = useState<ImageGenerationModel>("r/gpt-image-1");
 
   const { selectedStyle } = useVisualStyle();
 
@@ -99,6 +99,7 @@ export const GenerateSidebar = ({
   const handleModelChange = (value: ImageGenerationModel) => {
     setModel(value);
     handleFormChange("aspectRatio", "1:1");
+    handleFormChange("quality", "high");
   };
 
   const handleEnhancePrompt = useCallback(async () => {
@@ -155,6 +156,7 @@ export const GenerateSidebar = ({
       settings: {
         aspectRatio: formData.aspectRatio,
         quality: formData.quality,
+        strictness: formData.strictness,
       },
     });
   }, [editor, agentGenerateImage, projectId, formData, selectedStyle, model]);
@@ -265,6 +267,58 @@ export const GenerateSidebar = ({
               </div>
             </div>
 
+            {/* Sketch Guidance Controls */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Sketch Guidance</Label>
+              <Select
+                value={formData.strictness}
+                onValueChange={(value) => handleFormChange("strictness", value)}
+              >
+                <SelectTrigger className="bg-muted border">
+                  <SelectValue placeholder="Select guidance level" />
+                </SelectTrigger>
+                <SelectContent className="bg-black p-4 rounded-xl">
+                  <div className="px-2 pb-2 text-muted-foreground text-sm font-medium">
+                    Select level
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <SelectItem
+                      value="loose"
+                      className="group flex items-center gap-4 rounded-lg px-4 py-2"
+                    >
+                      <div className="flex items-center gap-3 w-full">
+                        <span className="font-medium mr-2">Loose</span>
+                        <p className="text-muted-foreground">
+                          (Creative interpretation)
+                        </p>
+                      </div>
+                    </SelectItem>
+                    <SelectItem
+                      value="moderate"
+                      className="group flex items-center gap-4 rounded-lg px-4 py-2"
+                    >
+                      <div className="flex items-center gap-3 w-full">
+                        <span className="font-medium mr-2">Moderate</span>
+                        <p className="text-muted-foreground">
+                          (Follow general layout)
+                        </p>
+                      </div>
+                    </SelectItem>
+                    <SelectItem
+                      value="strict"
+                      className="group flex items-center gap-4 rounded-lg px-4 py-2"
+                    >
+                      <div className="flex items-center gap-3 w-full">
+                        <span className="font-medium mr-2">Strict</span>
+                        <p className="text-muted-foreground">
+                          (Follow sketch exactly)
+                        </p>
+                      </div>
+                    </SelectItem>
+                  </div>
+                </SelectContent>
+              </Select>
+            </div>
             {/* Aspect Ratio Selection */}
             <div className="space-y-2">
               <Label className="text-sm font-medium">Aspect Ratio</Label>

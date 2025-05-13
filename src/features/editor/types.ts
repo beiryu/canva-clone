@@ -269,6 +269,7 @@ export interface GenerateState {
     prompt: string;
     aspectRatio: string;
     quality: string;
+    strictness: string;
   };
 }
 
@@ -278,6 +279,7 @@ export const INITIAL_GENERATE_STATE: GenerateState = {
       "Artistic background with multiple overlapping characters, in an abstract or semi-abstract style",
     aspectRatio: "1:1",
     quality: "medium",
+    strictness: "moderate",
   },
 };
 

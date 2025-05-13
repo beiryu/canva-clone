@@ -15,32 +15,47 @@ import {
   TextGenerationResult,
 } from "../types";
 import { convertToFile } from "@/features/images/utils";
-import { formatPromptWithStyle } from "../utils";
+import {
+  createSketchGuidanceInstruction,
+  createStyleInstruction,
+} from "../utils";
+
 // Model handler for GPT-Image-1
 class GPTImageHandler
   extends BaseModelHandler
   implements ImageGenerationHandler
 {
   constructor() {
-    super("gpt-image-1", ["image-generation"]);
+    super("o/gpt-image-1", ["image-generation"]);
   }
 
   async generateImage(
     options: ImageGenerationOptions,
   ): Promise<ImageGenerationResult> {
-    const { prompt, settings, style } = options;
+    const { prompt, settings, style = "nature" } = options;
 
-    const { aspectRatio = "1:1", quality = "high" } = settings;
+    const {
+      aspectRatio = "1:1",
+      quality = "high",
+      strictness = "moderate",
+    } = settings;
+
+    const guidanceInstruction = createSketchGuidanceInstruction(strictness);
+    const styleInstruction = createStyleInstruction(style);
 
     try {
       const input = {
         model: "gpt-image-1",
-        prompt: formatPromptWithStyle(prompt, style),
+        prompt: `
+        [SKETCH GUIDANCE] ${guidanceInstruction}
+        [STYLE GUIDANCE] ${styleInstruction}
+        [USER PROMPT] ${prompt}
+        `,
         size: this.mapAspectRatioToSize(aspectRatio),
         quality: this.mapQuality(quality),
       };
 
-      console.log("Generating image with GPT-Image-1", input);
+      console.log("Generating image with OpenAI GPT-Image-1", input);
 
       const response = await openai.images.generate(input);
 
@@ -49,7 +64,7 @@ class GPTImageHandler
       }
 
       const file = await convertToFile(response.data[0].b64_json as string, {
-        filePrefix: "gpt-image-1",
+        filePrefix: "o/gpt-image-1",
       });
 
       return { file };
@@ -62,7 +77,7 @@ class GPTImageHandler
   async editImage(
     options: ImageGenerationOptions,
   ): Promise<ImageGenerationResult> {
-    throw new Error("Editing images is not supported for GPT-Image-1");
+    throw new Error("Editing images is not supported for OpenAI GPT-Image-1");
   }
 
   private mapQuality(quality?: ImageQuality): "low" | "medium" | "high" {

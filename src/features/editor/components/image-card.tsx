@@ -190,15 +190,18 @@ export function ImageCard({ image }: ImageCardProps) {
               </div>
             )}
 
+            {/* Model */}
+            {image.model && (
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Model</p>
+                <p className="text-xs text-gray-400">{image.model}</p>
+              </div>
+            )}
+
             {/* Settings */}
             <div>
               <p className="text-xs text-gray-500 mb-1">Settings</p>
               <div className="space-y-1">
-                {image.settings.model && (
-                  <p className="text-xs text-gray-400">
-                    Model: {image.settings.model}
-                  </p>
-                )}
                 {image.settings.aspectRatio && (
                   <p className="text-xs text-gray-400">
                     Aspect Ratio: {image.settings.aspectRatio}
@@ -207,6 +210,11 @@ export function ImageCard({ image }: ImageCardProps) {
                 {image.settings.quality && (
                   <p className="text-xs text-gray-400">
                     Quality: {image.settings.quality}
+                  </p>
+                )}
+                {image.settings.strictness && (
+                  <p className="text-xs text-gray-400">
+                    Strictness: {image.settings.strictness}
                   </p>
                 )}
               </div>

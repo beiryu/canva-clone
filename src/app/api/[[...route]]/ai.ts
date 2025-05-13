@@ -8,6 +8,7 @@ import {
   ImageAspectRatio,
   ImageGenerationModel,
   ImageQuality,
+  SketchGuidanceStrictness,
   TextGenerationModel,
 } from "@/features/agents/types";
 import { db } from "@/db/drizzle";
@@ -95,6 +96,7 @@ const app = new Hono()
         settings: z.object({
           aspectRatio: z.string().optional(),
           quality: z.string().optional(),
+          strictness: z.string().optional(),
         }),
       }),
     ),
@@ -102,7 +104,7 @@ const app = new Hono()
       let { projectId, prompt, style, settings, canvasImage, model } =
         c.req.valid("json");
 
-      const { aspectRatio, quality } = settings;
+      const { aspectRatio, quality, strictness } = settings;
 
       const auth = c.get("authUser");
 
@@ -142,6 +144,7 @@ const app = new Hono()
           settings: {
             aspectRatio: aspectRatio as ImageAspectRatio,
             quality: quality as ImageQuality,
+            strictness: strictness as SketchGuidanceStrictness,
           },
         });
 
@@ -163,6 +166,7 @@ const app = new Hono()
             fullPath,
             prompt,
             style,
+            model,
             settings,
             createdAt: new Date(),
             updatedAt: new Date(),
