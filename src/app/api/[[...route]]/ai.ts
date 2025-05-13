@@ -163,6 +163,8 @@ const app = new Hono()
             style,
             model,
             settings,
+            providerName: result.providerName,
+            providerImageId: result.providerImageId,
             createdAt: new Date(),
             updatedAt: new Date(),
           })

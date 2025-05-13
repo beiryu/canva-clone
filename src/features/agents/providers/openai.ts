@@ -67,7 +67,7 @@ class GPTImage1Handler
         filePrefix: "o/gpt-image-1",
       });
 
-      return { file };
+      return { file, providerName: "openai" };
     } catch (error) {
       console.error("Error calling OpenAI:", error);
       throw error;

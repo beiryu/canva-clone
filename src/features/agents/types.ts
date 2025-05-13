@@ -64,6 +64,8 @@ export interface RemoveBgOptions extends BaseGenerationOptions {
 // Result interfaces
 export interface ImageGenerationResult {
   file: File;
+  providerName?: string;
+  providerImageId?: string;
 }
 
 export interface TextGenerationResult {

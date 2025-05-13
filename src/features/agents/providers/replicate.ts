@@ -55,11 +55,14 @@ class FluxSchnellHandler
 
       console.log("Generating image with Flux Schnell", input);
 
-      const output = await replicate.run("black-forest-labs/flux-schnell", {
+      const prediction = await replicate.predictions.create({
+        version: "black-forest-labs/flux-schnell",
         input,
       });
 
-      const result = output as Array<string>;
+      const completedPrediction = await replicate.wait(prediction);
+
+      const result = completedPrediction.output as Array<string>;
 
       if (!result || !result[0]) {
         throw new Error("Invalid output from Replicate");
@@ -69,7 +72,11 @@ class FluxSchnellHandler
         filePrefix: "flux-schnell",
       });
 
-      return { file };
+      return {
+        file,
+        providerName: "replicate",
+        providerImageId: prediction.id,
+      };
     } catch (error) {
       console.error("Error with Replicate API:", error);
       throw error;
@@ -138,11 +145,14 @@ class GPTImage1Handler
         openai_api_key: "REDACTED",
       });
 
-      const output = await replicate.run("openai/gpt-image-1", {
+      const prediction = await replicate.predictions.create({
+        version: "openai/gpt-image-1",
         input,
       });
 
-      const result = output as Array<string>;
+      const completedPrediction = await replicate.wait(prediction);
+
+      const result = completedPrediction.output as Array<string>;
 
       if (!result || !result[0]) {
         throw new Error("Invalid output from Replicate");
@@ -152,7 +162,11 @@ class GPTImage1Handler
         filePrefix: "replicate-gpt-image",
       });
 
-      return { file };
+      return {
+        file,
+        providerName: "replicate",
+        providerImageId: prediction.id,
+      };
     } catch (error) {
       console.error("Error with Replicate API:", error);
       throw error;
@@ -204,14 +218,14 @@ class Flux11ProUltraHandler
 
       console.log("Generating image with Flux Pro Ultra", input);
 
-      const output = await replicate.run(
-        "black-forest-labs/flux-1.1-pro-ultra",
-        {
-          input,
-        },
-      );
+      const prediction = await replicate.predictions.create({
+        version: "black-forest-labs/flux-1.1-pro-ultra",
+        input,
+      });
 
-      const result = output as unknown as string;
+      const completedPrediction = await replicate.wait(prediction);
+
+      const result = completedPrediction.output as unknown as string;
 
       if (!result) {
         throw new Error("Invalid output from Replicate");
@@ -221,7 +235,11 @@ class Flux11ProUltraHandler
         filePrefix: "flux-pro-ultra",
       });
 
-      return { file };
+      return {
+        file,
+        providerName: "replicate",
+        providerImageId: prediction.id,
+      };
     } catch (error) {
       console.error("Error with Replicate API:", error);
       throw error;
@@ -254,14 +272,15 @@ class LabsBackgroundRemoverHandler
 
       console.log("Removing background with Background Remover", input);
 
-      const output = await replicate.run(
-        "851-labs/background-remover:a029dff38972b5fda4ec5d75d7d1cd25aeff621d2cf4946a41055d7db66b80bc",
-        {
-          input,
-        },
-      );
+      const prediction = await replicate.predictions.create({
+        version:
+          "851-labs/background-remover:a029dff38972b5fda4ec5d75d7d1cd25aeff621d2cf4946a41055d7db66b80bc",
+        input,
+      });
 
-      const result = output as unknown as string;
+      const completedPrediction = await replicate.wait(prediction);
+
+      const result = completedPrediction.output as unknown as string;
 
       if (!result) {
         throw new Error("Invalid output from Replicate");

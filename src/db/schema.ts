@@ -155,6 +155,8 @@ export const generatedImages = pgTable("generated_image", {
   style: text("style"),
   model: text("model"),
   settings: jsonb("settings").notNull(),
+  providerName: text("providerName"),
+  providerImageId: text("providerImageId"),
   createdAt: timestamp("createdAt", { mode: "date" }).notNull(),
   updatedAt: timestamp("updatedAt", { mode: "date" }).notNull(),
 });
