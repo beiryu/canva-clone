@@ -11,9 +11,10 @@ export default function ImageStyles() {
       <Image
         src={selectedStyle.image}
         alt="Preview image"
-        width={300}
+        width={200}
         height={200}
-        className="w-full h-[200px] object-cover"
+        className="w-full h-60 object-cover"
+        style={{ objectPosition: "0 0" }}
       />
       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/50 flex flex-col justify-end p-4">
         <h3 className="text-xl font-bold text-yellow-300 uppercase">

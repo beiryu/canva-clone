@@ -102,7 +102,7 @@ export async function uploadRemoteImageToSupabase(
  */
 export async function getSignedUrl(
   path: string,
-  expiresIn: number = 15,
+  expiresIn: number = 60,
   bucketName: string = IMAGES_BUCKET_NAME,
 ): Promise<string> {
   const { data, error } = await supabase.storage

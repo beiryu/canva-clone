@@ -31,23 +31,26 @@ export const createStyleInstruction = (style: string): string => {
   let instructions = "";
 
   switch (style) {
-    case "cartoon":
-      instructions = `Vibrant cartoon style with bold outlines, flat colors, exaggerated features, comic book aesthetic, cell shading, expressive character design, clean vector-like appearance, Disney/Pixar inspired`;
-      break;
-    case "fantasy":
-      instructions = `Epic fantasy artwork, magical atmosphere, ethereal lighting, mystical elements, detailed environment, dramatic composition, vibrant colors, high detail, dreamlike quality`;
+    case "nature":
+      instructions = `Breathtaking nature photography, golden hour lighting, vibrant natural colors, high detail landscape, atmospheric perspective, shallow depth of field, National Geographic style, pristine wilderness, dramatic natural scenery`;
       break;
     case "pixel":
       instructions = `Detailed pixel art, 16-bit style, limited color palette, visible pixels, retro game aesthetic, isometric perspective, clean pixel edges, nostalgic gaming style, inspired by classic SNES and arcade games`;
       break;
-    case "retro":
-      instructions = `Vintage retro style, 1970s/1980s aesthetic, nostalgic elements, muted color palette with warm tones, film grain texture, analog photography feel, vaporwave elements, synthwave lighting, old-school design`;
-      break;
     case "sketch":
       instructions = `Detailed hand-drawn sketch, pencil strokes, hatching technique, gestural linework, minimal shading, artistic composition, sketchbook aesthetic, loose drawing style, black and white, high contrast`;
       break;
-    case "nature":
-      instructions = `Breathtaking nature photography, golden hour lighting, vibrant natural colors, high detail landscape, atmospheric perspective, shallow depth of field, National Geographic style, pristine wilderness, dramatic natural scenery`;
+    case "cinematic":
+      instructions = `Hollywood cinematic style, dramatic lighting, wide-angle composition, movie poster aesthetic, bold typography, high production value, professional color grading, epic scale, dynamic framing, theatrical atmosphere, blockbuster quality`;
+      break;
+    case "comic":
+      instructions = `Dynamic comic book style, bold linework, dramatic shading, vibrant colors, action-packed composition, halftone patterns, speech bubble elements, comic panel layout, superhero aesthetic, dramatic lighting, high contrast, Marvel/DC inspired`;
+      break;
+    case "cyberpunk":
+      instructions = `Neon-lit cyberpunk style, futuristic cityscape, rain-slicked streets, holographic elements, high-tech low-life aesthetic, vibrant neon colors, dark atmospheric lighting, Blade Runner inspired, technological dystopia, digital glitch effects`;
+      break;
+    case "ghibli":
+      instructions = `Studio Ghibli-inspired anime style, soft watercolor textures, expressive large eyes, dynamic hair movement, dreamy atmosphere, hand-painted backgrounds, warm lighting, detailed character expressions, whimsical elements`;
       break;
   }
 

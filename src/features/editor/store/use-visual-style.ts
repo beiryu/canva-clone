@@ -13,24 +13,29 @@ export const visualStyles: VisualStyle[] = [
     image: "/styles-editor/pixel.png",
   },
   {
-    id: "retro",
-    name: "Retro",
-    image: "/styles-editor/retro.png",
-  },
-  {
     id: "sketch",
     name: "Sketch",
     image: "/styles-editor/sketch.png",
   },
   {
-    id: "cartoon",
-    name: "Cartoon",
-    image: "/styles-editor/cartoon.png",
+    id: "cinematic",
+    name: "Cinematic",
+    image: "/styles-editor/cinematic.png",
   },
   {
-    id: "fantasy",
-    name: "Fantasy",
-    image: "/styles-editor/fantasy.png",
+    id: "comic",
+    name: "Comic",
+    image: "/styles-editor/comic.png",
+  },
+  {
+    id: "cyberpunk",
+    name: "Cyberpunk",
+    image: "/styles-editor/cyberpunk.png",
+  },
+  {
+    id: "ghibli",
+    name: "Ghibli",
+    image: "/styles-editor/ghibli.png",
   },
 ];
 
