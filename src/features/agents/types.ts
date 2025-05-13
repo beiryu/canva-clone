@@ -8,7 +8,12 @@ export type ImageGenerationModel =
 
 export type TextGenerationModel = "gpt-4";
 
-export type ModelCapability = "image-generation" | "text-generation";
+export type BackgroundRemoverModel = "851-labs/background-remover";
+
+export type ModelCapability =
+  | "image-generation"
+  | "text-generation"
+  | "background-remover";
 
 export type ImageAspectRatio =
   | "1:1"
@@ -52,6 +57,10 @@ export interface EnhancePromptOptions extends BaseGenerationOptions {
   currentPrompt: string;
 }
 
+export interface RemoveBgOptions extends BaseGenerationOptions {
+  image: string;
+}
+
 // Result interfaces
 export interface ImageGenerationResult {
   file: File;
@@ -59,6 +68,10 @@ export interface ImageGenerationResult {
 
 export interface TextGenerationResult {
   text: string;
+}
+
+export interface RemoveBgResult {
+  file: File;
 }
 
 // Provider API interfaces
@@ -92,4 +105,8 @@ export interface TextGenerationHandler extends ModelHandler {
   enhancePrompt: (
     options: EnhancePromptOptions,
   ) => Promise<TextGenerationResult>;
+}
+
+export interface BackgroundRemoverHandler extends ModelHandler {
+  removeBg: (options: RemoveBgOptions) => Promise<RemoveBgResult>;
 }

@@ -1,5 +1,5 @@
-import { replicate } from "@/lib/replicate";
 import { convertToFile } from "@/features/images/utils";
+import { replicate } from "@/lib/replicate";
 import { BaseModelHandler } from "../model-handler";
 import {
   AgentProvider,
@@ -9,6 +9,8 @@ import {
   ImageQuality,
   ModelCapability,
   ModelHandler,
+  RemoveBgOptions,
+  RemoveBgResult,
 } from "../types";
 import {
   createSketchGuidanceInstruction,
@@ -225,23 +227,54 @@ class FluxProUltraHandler
     }
   }
 
-  private mapQuality(quality: ImageQuality): number {
-    switch (quality) {
-      case "low":
-        return 60;
-      case "medium":
-        return 80;
-      case "high":
-        return 100;
-      default:
-        return 80;
-    }
-  }
-
   async editImage(
     options: ImageGenerationOptions,
   ): Promise<ImageGenerationResult> {
     throw new Error("Editing images is not supported for Flux Schnell");
+  }
+}
+
+// Model handler for Background Remover
+class BackgroundRemoverHandler
+  extends BaseModelHandler
+  implements BackgroundRemoverHandler
+{
+  constructor() {
+    super("851-labs/background-remover", ["background-remover"]);
+  }
+
+  async removeBg(options: RemoveBgOptions): Promise<RemoveBgResult> {
+    try {
+      const { image } = options;
+
+      const input = {
+        image,
+      };
+
+      console.log("Removing background with Background Remover", input);
+
+      const output = await replicate.run(
+        "851-labs/background-remover:a029dff38972b5fda4ec5d75d7d1cd25aeff621d2cf4946a41055d7db66b80bc",
+        {
+          input,
+        },
+      );
+
+      const result = output as unknown as string;
+
+      if (!result) {
+        throw new Error("Invalid output from Replicate");
+      }
+
+      const file = await convertToFile(result, {
+        filePrefix: "background-remover",
+      });
+
+      return { file };
+    } catch (error) {
+      console.error("Error with Replicate API:", error);
+      throw error;
+    }
   }
 }
 
@@ -256,6 +289,7 @@ export class ReplicateProvider implements AgentProvider {
     this.registerHandler(new FluxSchnellHandler());
     this.registerHandler(new ReplicateGPTImageHandler());
     this.registerHandler(new FluxProUltraHandler());
+    this.registerHandler(new BackgroundRemoverHandler());
   }
 
   private registerHandler(handler: ModelHandler): void {

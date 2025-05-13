@@ -5,20 +5,20 @@ import { client } from "@/lib/hono";
 import { toast } from "sonner";
 
 type ResponseType = InferResponseType<
-  (typeof client.api.ai)["remove-bg"]["$post"],
+  (typeof client.api.ai)["agent-remove-bg"]["$post"],
   200
 >;
 
 type RequestType = InferRequestType<
-  (typeof client.api.ai)["remove-bg"]["$post"]
+  (typeof client.api.ai)["agent-remove-bg"]["$post"]
 >["json"];
 
-export const useRemoveBg = () => {
+export const useAgentRemoveBg = () => {
   const queryClient = useQueryClient();
 
   const mutation = useMutation<ResponseType, Error, RequestType>({
     mutationFn: async (json) => {
-      const response = await client.api.ai["remove-bg"].$post({ json });
+      const response = await client.api.ai["agent-remove-bg"].$post({ json });
 
       if (!response.ok) {
         throw new Error("Failed to remove background from image");

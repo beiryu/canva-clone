@@ -1,4 +1,5 @@
 import {
+  BackgroundRemoverModel,
   ImageGenerationModel,
   ModelCapability,
   TextGenerationModel,
@@ -19,7 +20,10 @@ export interface ModelConfig {
   };
 }
 
-export type AnyModel = ImageGenerationModel | TextGenerationModel;
+export type AnyModel =
+  | ImageGenerationModel
+  | TextGenerationModel
+  | BackgroundRemoverModel;
 
 const productionModels: [AnyModel, ModelConfig][] = [
   [
@@ -71,6 +75,16 @@ const productionModels: [AnyModel, ModelConfig][] = [
         maxTokens: 4096,
         contextSize: 8192,
       },
+    },
+  ],
+  [
+    "851-labs/background-remover",
+    {
+      provider: "replicate",
+      name: "Background Remover",
+      description: "Remove the background from an image",
+      capabilities: ["background-remover"],
+      params: {},
     },
   ],
 ];

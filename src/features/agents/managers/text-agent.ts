@@ -1,12 +1,12 @@
-import { modelRegistry } from "./models";
-import { OpenAIProvider } from "./providers/openai";
+import { modelRegistry } from "../models";
+import { OpenAIProvider } from "../providers/openai";
 import {
   AgentProvider,
   EnhancePromptOptions,
   TextGenerationHandler,
   TextGenerationOptions,
   TextGenerationResult,
-} from "./types";
+} from "../types";
 
 export class TextAgent {
   private providers: Map<string, AgentProvider> = new Map();
@@ -94,7 +94,6 @@ export class TextAgent {
   ): handler is TextGenerationHandler {
     return (
       handler &&
-      typeof handler.generateText === "function" &&
       handler.capabilities &&
       handler.capabilities.includes("text-generation")
     );

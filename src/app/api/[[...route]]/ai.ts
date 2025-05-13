@@ -3,7 +3,9 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { z } from "zod";
 
-import { AgentManager } from "@/features/agents/agent-manager";
+import { db } from "@/db/drizzle";
+import { generatedImages, uploadedImages } from "@/db/schema";
+import { AgentManager } from "@/features/agents/managers";
 import {
   ImageAspectRatio,
   ImageGenerationModel,
@@ -11,21 +13,17 @@ import {
   SketchGuidanceStrictness,
   TextGenerationModel,
 } from "@/features/agents/types";
-import { db } from "@/db/drizzle";
-import { generatedImages, uploadedImages } from "@/db/schema";
 import {
-  uploadFileToSupabase,
-  uploadRemoteImageToSupabase,
   getSignedUrl,
   IMAGES_BUCKET_NAME,
   TEMPORARY_IMAGES_BUCKET_NAME,
+  uploadFileToSupabase,
 } from "@/features/images/core/supabase";
-import { replicate } from "@/lib/replicate";
 import { convertToFile } from "@/features/images/utils";
 
 const app = new Hono()
   .post(
-    "/remove-bg",
+    "/agent-remove-bg",
     verifyAuth(),
     zValidator(
       "json",
@@ -42,23 +40,20 @@ const app = new Hono()
         return c.json({ error: "Unauthorized" }, 401);
       }
 
-      const input = {
-        image: image,
-      };
+      const agentManager = new AgentManager();
 
-      const output: unknown = await replicate.run(
-        "lucataco/remove-bg:95fcc2a26d3899cd6c2691c900465aaeff466285a65c14638cc5f36f34befaf1",
-        { input },
-      );
-
-      const resultImageUrl = output as string;
+      const result = await agentManager.removeBg({
+        model: "851-labs/background-remover",
+        image,
+      });
 
       // Upload the result to Supabase
-      const uploadResult = await uploadRemoteImageToSupabase({
-        imageUrl: resultImageUrl,
+      const uploadResult = await uploadFileToSupabase({
+        file: result.file,
         userId: auth.token.id,
         projectId: projectId,
         prefix: "remove-bg",
+        bucketName: IMAGES_BUCKET_NAME,
       });
 
       // Save the image metadata to the database

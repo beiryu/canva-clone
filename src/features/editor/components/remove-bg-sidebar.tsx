@@ -7,7 +7,7 @@ import { ActiveTool, Editor } from "@/features/editor/types";
 import { ToolSidebarClose } from "@/features/editor/components/tool-sidebar-close";
 import { ToolSidebarHeader } from "@/features/editor/components/tool-sidebar-header";
 
-import { useRemoveBg } from "@/features/ai/api/use-remove-bg";
+import { useAgentRemoveBg } from "@/features/ai/api/use-agent-remove-bg";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,7 @@ export const RemoveBgSidebar = ({
   projectId,
 }: RemoveBgSidebarProps) => {
   const { shouldBlock, triggerPaywall } = usePaywall();
-  const mutation = useRemoveBg();
+  const mutation = useAgentRemoveBg();
 
   const selectedObject = editor?.selectedObjects[0];
 

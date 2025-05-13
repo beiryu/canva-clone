@@ -1,12 +1,12 @@
-import { modelRegistry } from "./models";
-import { OpenAIProvider } from "./providers/openai";
-import { ReplicateProvider } from "./providers/replicate";
+import { modelRegistry } from "../models";
+import { OpenAIProvider } from "../providers/openai";
+import { ReplicateProvider } from "../providers/replicate";
 import {
   AgentProvider,
   ImageGenerationHandler,
   ImageGenerationOptions,
   ImageGenerationResult,
-} from "./types";
+} from "../types";
 
 export class ImageAgent {
   private providers: Map<string, AgentProvider> = new Map();
@@ -93,7 +93,6 @@ export class ImageAgent {
   ): handler is ImageGenerationHandler {
     return (
       handler &&
-      typeof handler.generateImage === "function" &&
       handler.capabilities &&
       handler.capabilities.includes("image-generation")
     );
