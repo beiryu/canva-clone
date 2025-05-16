@@ -131,11 +131,12 @@ export const subscriptions = pgTable("subscription", {
     .references(() => users.id, {
       onDelete: "cascade",
     }),
-  subscriptionId: text("subscriptionId").notNull(),
   customerId: text("customerId").notNull(),
   priceId: text("priceId").notNull(),
   status: text("status").notNull(),
-  currentPeriodEnd: timestamp("currentPeriodEnd", { mode: "date" }),
+  productId: text("productId").notNull(),
+  checkoutId: text("checkoutId"),
+  type: text("type").notNull(),
   createdAt: timestamp("createdAt", { mode: "date" }).notNull(),
   updatedAt: timestamp("updatedAt", { mode: "date" }).notNull(),
 });
@@ -203,3 +204,55 @@ export const uploadedImagesRelations = relations(uploadedImages, ({ one }) => ({
 }));
 
 export const uploadedImagesInsertSchema = createInsertSchema(uploadedImages);
+
+export const userCredits = pgTable("user_credits", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  balance: integer("balance").notNull().default(0),
+  lifetimeEarned: integer("lifetimeEarned").notNull().default(0),
+  lifetimeSpent: integer("lifetimeSpent").notNull().default(0),
+  createdAt: timestamp("createdAt", { mode: "date" }).notNull(),
+  updatedAt: timestamp("updatedAt", { mode: "date" }).notNull(),
+});
+
+export const userCreditsRelations = relations(userCredits, ({ one }) => ({
+  user: one(users, {
+    fields: [userCredits.userId],
+    references: [users.id],
+  }),
+}));
+
+export const creditTransactions = pgTable("credit_transactions", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  amount: integer("amount").notNull(),
+  balanceAfter: integer("balanceAfter").notNull(),
+  description: text("description"),
+  metadata: jsonb("metadata"),
+  referenceId: text("referenceId"),
+  referenceType: text("referenceType"),
+  createdAt: timestamp("createdAt", { mode: "date" }).notNull(),
+  updatedAt: timestamp("updatedAt", { mode: "date" }).notNull(),
+});
+
+export const creditTransactionsRelations = relations(
+  creditTransactions,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [creditTransactions.userId],
+      references: [users.id],
+    }),
+  }),
+);
+
+export const userCreditsInsertSchema = createInsertSchema(userCredits);
+export const creditTransactionsInsertSchema =
+  createInsertSchema(creditTransactions);

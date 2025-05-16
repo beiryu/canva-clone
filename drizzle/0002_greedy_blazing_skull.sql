@@ -1,1 +1,0 @@
-ALTER TABLE "generated_image" ADD COLUMN "model" text;

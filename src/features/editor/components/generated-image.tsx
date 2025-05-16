@@ -8,7 +8,7 @@ interface GeneratedImageProps {
   projectId: string;
 }
 
-export default function GeneratedImage({ projectId }: GeneratedImageProps) {
+export const GeneratedImage = ({ projectId }: GeneratedImageProps) => {
   const { data: images, isLoading } = useProjectGeneratedImages(projectId);
 
   if (isLoading) {
@@ -46,4 +46,4 @@ export default function GeneratedImage({ projectId }: GeneratedImageProps) {
       </div>
     </main>
   );
-}
+};

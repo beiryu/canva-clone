@@ -27,15 +27,16 @@ import { AiSidebar } from "@/features/editor/components/ai-sidebar";
 import { TemplateSidebar } from "@/features/editor/components/template-sidebar";
 import { RemoveBgSidebar } from "@/features/editor/components/remove-bg-sidebar";
 import { SettingsSidebar } from "@/features/editor/components/settings-sidebar";
-import { GenerateSidebar } from "./generate-sidebar";
-import { MagicWandButton } from "./magic-wand-button";
+import { GenerateSidebar } from "@/features/editor/components/generate-sidebar";
+import { MagicWandButton } from "@/features/editor/components/magic-wand-button";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import GeneratedImage from "./generated-image";
 import { ScrollArea } from "@/components/ui/scroll-area";
+
+import { GeneratedImage } from "@/features/editor/components/generated-image";
 
 interface EditorProps {
   initialData: ResponseType["data"];

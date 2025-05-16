@@ -29,6 +29,7 @@ import { useAgentEnhancePrompt } from "@/features/ai/api/use-agent-enhance-promp
 import { modelRegistry } from "@/features/agents/models";
 import { ImageGenerationModel } from "@/features/agents/types";
 import { getModelsByCapability } from "@/features/agents/utils";
+import { usePaywall } from "@/features/subscriptions/hooks/use-paywall";
 
 interface GenerateSidebarProps {
   editor: Editor | undefined;
@@ -73,6 +74,8 @@ export const GenerateSidebar = ({
   const [state, dispatch] = useReducer(reducer, INITIAL_GENERATE_STATE);
 
   const { formData } = state;
+
+  const { shouldBlock, triggerPaywall } = usePaywall();
 
   const agentGenerateImage = useAgentGenerateImage();
   const agentEnhancePrompt = useAgentEnhancePrompt();
@@ -135,6 +138,11 @@ export const GenerateSidebar = ({
   }, [formData.prompt, agentEnhancePrompt]);
 
   const handleGenerate = useCallback(async () => {
+    if (shouldBlock) {
+      triggerPaywall();
+      return;
+    }
+
     if (!editor) {
       toast.error("Editor not available");
       return;

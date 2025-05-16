@@ -26,13 +26,30 @@ CREATE TABLE IF NOT EXISTS "authenticator" (
 	CONSTRAINT "authenticator_credentialID_unique" UNIQUE("credentialID")
 );
 --> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "credit_transactions" (
+	"id" text PRIMARY KEY NOT NULL,
+	"userId" text NOT NULL,
+	"amount" integer NOT NULL,
+	"balanceAfter" integer NOT NULL,
+	"description" text,
+	"metadata" jsonb,
+	"referenceId" text,
+	"referenceType" text,
+	"createdAt" timestamp NOT NULL,
+	"updatedAt" timestamp NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "generated_image" (
 	"id" text PRIMARY KEY NOT NULL,
 	"projectId" text NOT NULL,
-	"url" text NOT NULL,
+	"userId" text NOT NULL,
+	"fullPath" text NOT NULL,
 	"prompt" text,
 	"style" text,
+	"model" text,
 	"settings" jsonb NOT NULL,
+	"providerName" text,
+	"providerImageId" text,
 	"createdAt" timestamp NOT NULL,
 	"updatedAt" timestamp NOT NULL
 );
@@ -60,11 +77,11 @@ CREATE TABLE IF NOT EXISTS "session" (
 CREATE TABLE IF NOT EXISTS "subscription" (
 	"id" text PRIMARY KEY NOT NULL,
 	"userId" text NOT NULL,
-	"subscriptionId" text NOT NULL,
 	"customerId" text NOT NULL,
 	"priceId" text NOT NULL,
 	"status" text NOT NULL,
-	"currentPeriodEnd" timestamp,
+	"productId" text NOT NULL,
+	"checkoutId" text,
 	"createdAt" timestamp NOT NULL,
 	"updatedAt" timestamp NOT NULL
 );
@@ -77,6 +94,16 @@ CREATE TABLE IF NOT EXISTS "uploaded_image" (
 	"fileName" text NOT NULL,
 	"fileSize" integer NOT NULL,
 	"fileType" text NOT NULL,
+	"createdAt" timestamp NOT NULL,
+	"updatedAt" timestamp NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "user_credits" (
+	"id" text PRIMARY KEY NOT NULL,
+	"userId" text NOT NULL,
+	"balance" integer DEFAULT 0 NOT NULL,
+	"lifetimeEarned" integer DEFAULT 0 NOT NULL,
+	"lifetimeSpent" integer DEFAULT 0 NOT NULL,
 	"createdAt" timestamp NOT NULL,
 	"updatedAt" timestamp NOT NULL
 );
@@ -110,7 +137,19 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
+ ALTER TABLE "credit_transactions" ADD CONSTRAINT "credit_transactions_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
  ALTER TABLE "generated_image" ADD CONSTRAINT "generated_image_projectId_project_id_fk" FOREIGN KEY ("projectId") REFERENCES "public"."project"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "generated_image" ADD CONSTRAINT "generated_image_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -141,6 +180,12 @@ END $$;
 --> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "uploaded_image" ADD CONSTRAINT "uploaded_image_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "user_credits" ADD CONSTRAINT "user_credits_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;

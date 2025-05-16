@@ -12,6 +12,7 @@ import {
   validateEvent,
   WebhookVerificationError,
 } from "@polar-sh/sdk/webhooks.js";
+import { addCredits } from "@/features/credits/core/credit";
 
 const app = new Hono()
   .post("/billing", verifyAuth(), async (c) => {
@@ -69,7 +70,7 @@ const app = new Hono()
     }
 
     const originURL = new URL(c.req.url);
-    const products = [process.env.POLAR_PRODUCT_ID!];
+    const products = [process.env.POLAR_ONETIME_PRODUCT_ID!];
 
     if (products.length === 0) {
       return c.json({ error: "Missing products in query params" }, 400);
@@ -96,16 +97,17 @@ const app = new Hono()
         originURL.searchParams.get("customerIpAddress") ?? undefined,
       customerMetadata: originURL.searchParams.has("customerMetadata")
         ? JSON.parse(originURL.searchParams.get("customerMetadata") ?? "{}")
-        : {
-            userId: auth.token.id,
-          },
+        : undefined,
       allowDiscountCodes: originURL.searchParams.has("allowDiscountCodes")
         ? originURL.searchParams.get("allowDiscountCodes") === "true"
         : undefined,
       discountId: originURL.searchParams.get("discountId") ?? undefined,
       metadata: originURL.searchParams.has("metadata")
         ? JSON.parse(originURL.searchParams.get("metadata") ?? "{}")
-        : undefined,
+        : {
+            type: "initial_subscription",
+            userId: auth.token.id,
+          },
     });
 
     const url = session.url;
@@ -149,28 +151,80 @@ const app = new Hono()
 
         await db.insert(subscriptions).values({
           status: data.status,
-          userId: data.customer.metadata.userId as string,
-          subscriptionId: data.subscription?.id as string,
+          userId: data.metadata.userId as string,
           customerId: data.customer.id as string,
           priceId: data.items[0].productPriceId as string,
-          currentPeriodEnd: data.subscription?.currentPeriodEnd,
+          productId: data.productId,
+          checkoutId: data.checkoutId,
+          type: data.metadata.type as string,
           createdAt: new Date(),
           updatedAt: new Date(),
         });
       },
       onOrderPaid: async (payload) => {
-        await db
-          .update(subscriptions)
-          .set({
-            status: payload.data.status,
-            updatedAt: new Date(),
-          })
-          .where(
-            eq(
-              subscriptions.subscriptionId,
-              payload.data.subscriptionId as string,
-            ),
-          );
+        const { data } = payload;
+
+        switch (data.productId) {
+          case process.env.POLAR_ONETIME_PRODUCT_ID:
+            try {
+              const initialCredits = 1000;
+
+              const [subscription] = await db
+                .update(subscriptions)
+                .set({
+                  status: data.status,
+                  updatedAt: new Date(),
+                })
+                .where(eq(subscriptions.checkoutId, data.checkoutId as string))
+                .returning();
+
+              if (subscription) {
+                await addCredits({
+                  userId: subscription.userId,
+                  amount: initialCredits,
+                  description: "Initial subscription credits",
+                  metadata: {},
+                  referenceId: subscription.id,
+                  referenceType: subscription.type,
+                });
+              }
+            } catch (error) {
+              console.error(
+                "Error adding initial subscription credits:",
+                error,
+              );
+            }
+            break;
+          case process.env.POLAR_PAYG_PRODUCT_ID:
+            try {
+              const creditsToAdd = parseInt(data.metadata.credits as string);
+
+              const [subscription] = await db
+                .update(subscriptions)
+                .set({
+                  status: data.status,
+                  updatedAt: new Date(),
+                })
+                .where(eq(subscriptions.checkoutId, data.checkoutId as string))
+                .returning();
+
+              if (subscription) {
+                await addCredits({
+                  userId: subscription.userId,
+                  amount: creditsToAdd,
+                  description: `Purchase ${creditsToAdd} credits`,
+                  metadata: {},
+                  referenceId: subscription.id,
+                  referenceType: subscription.type,
+                });
+              }
+            } catch (error) {
+              console.error("Error purchasing credits:", error);
+            }
+            break;
+          default:
+            break;
+        }
       },
     });
 

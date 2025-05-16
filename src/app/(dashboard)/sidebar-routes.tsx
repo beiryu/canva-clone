@@ -1,6 +1,12 @@
 "use client";
 
-import { CreditCard, Crown, Home, MessageCircleQuestion } from "lucide-react";
+import {
+  BadgeDollarSign,
+  CreditCard,
+  Crown,
+  Home,
+  MessageCircleQuestion,
+} from "lucide-react";
 import { usePathname } from "next/navigation";
 
 import { usePaywall } from "@/features/subscriptions/hooks/use-paywall";
@@ -61,6 +67,12 @@ export const SidebarRoutes = () => {
         <Separator className="bg-accent-foreground" />
       </div>
       <ul className="flex flex-col gap-y-1 px-3">
+        <SidebarItem
+          href="/credits"
+          icon={BadgeDollarSign}
+          label="Credits"
+          isActive={pathname === "/credits"}
+        />
         <SidebarItem
           href={pathname}
           icon={CreditCard}

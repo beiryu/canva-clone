@@ -1,33 +1,19 @@
 {
-  "version": "5",
-  "dialect": "pg",
+  "version": "7",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
       "version": "7",
-      "when": 1746771636131,
-      "tag": "0000_numerous_reavers",
+      "when": 1747395285035,
+      "tag": "0000_fair_luke_cage",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1746774635154,
-      "tag": "0001_fluffy_tempest",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1747071553209,
-      "tag": "0002_greedy_blazing_skull",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1747127113563,
-      "tag": "0003_wooden_bloodstorm",
+      "when": 1747398662158,
+      "tag": "0001_fixed_thena",
       "breakpoints": true
     }
   ]
