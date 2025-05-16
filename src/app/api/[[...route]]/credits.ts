@@ -1,5 +1,5 @@
 import { verifyAuth } from "@hono/auth-js";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { Hono } from "hono";
 
 import { db } from "@/db/drizzle";
@@ -31,7 +31,7 @@ const app = new Hono()
       .select()
       .from(creditTransactions)
       .where(eq(creditTransactions.userId, auth.token.id))
-      .orderBy(creditTransactions.createdAt);
+      .orderBy(desc(creditTransactions.createdAt));
 
     return c.json({ data: transactions });
   })
