@@ -1,5 +1,5 @@
 import { verifyAuth } from "@hono/auth-js";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { Hono } from "hono";
 
 import { checkIsActive } from "@/features/subscriptions/lib";
@@ -51,7 +51,7 @@ const app = new Hono()
     const [subscription] = await db
       .select()
       .from(subscriptions)
-      .where(eq(subscriptions.userId, auth.token.id));
+      .where(and(eq(subscriptions.userId, auth.token.id), eq(subscriptions.type, "initial_subscription")));
 
     const active = checkIsActive(subscription);
 
