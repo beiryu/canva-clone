@@ -131,7 +131,7 @@ class GPTImage1Handler
         prompt: `
         [SKETCH GUIDANCE] ${guidanceInstruction}
         [STYLE GUIDANCE] ${styleInstruction}
-        [USER PROMPT] ${prompt}
+        [USER PROMPT] ${prompt}, NO TEXT, ONLY IMAGE
         `,
         quality: this.mapQuality(quality),
         aspect_ratio: aspectRatio,

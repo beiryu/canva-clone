@@ -119,7 +119,7 @@ export const GenerateSidebar = ({
     try {
       await agentEnhancePrompt.mutateAsync(
         {
-          model: "gpt-4",
+          model: "gpt-4.1-mini",
           prompt: formData.prompt,
         },
         {

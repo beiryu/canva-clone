@@ -190,7 +190,7 @@ const app = new Hono()
           prompt: z.string(),
         })
         .default({
-          model: "gpt-4",
+          model: "gpt-4.1-mini",
           prompt: "",
         }),
     ),

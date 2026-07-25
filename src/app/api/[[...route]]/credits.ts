@@ -63,7 +63,7 @@ const app = new Hono()
     // Create a checkout session
     const session = await polar.checkouts.create({
       products,
-      successUrl: `${process.env.NEXT_PUBLIC_APP_URL}?credits_success=1`,
+      successUrl: `${process.env.NEXT_PUBLIC_APP_URL}/credits?credits_success=1`,
       customerId: url.searchParams.get("customerId") ?? undefined,
       customerExternalId:
         url.searchParams.get("customerExternalId") ?? undefined,

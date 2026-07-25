@@ -51,7 +51,12 @@ const app = new Hono()
     const [subscription] = await db
       .select()
       .from(subscriptions)
-      .where(and(eq(subscriptions.userId, auth.token.id), eq(subscriptions.type, "initial_subscription")));
+      .where(
+        and(
+          eq(subscriptions.userId, auth.token.id),
+          eq(subscriptions.type, "initial_subscription"),
+        ),
+      );
 
     const active = checkIsActive(subscription);
 

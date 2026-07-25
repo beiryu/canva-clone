@@ -7,7 +7,6 @@ import { usePurchaseCredits } from "@/features/credits/api/use-purchase-credits"
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { usePaywall } from "@/features/subscriptions/hooks/use-paywall";
-import { useGetCredits } from "../api/use-get-credits";
 import { ArrowUpRight, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -49,16 +48,7 @@ export function CreditPurchasing() {
     // Convert dollars to cents
     const amountInCents = Math.floor(customAmount * 100);
 
-    purchaseCredits(amountInCents, {
-      onSuccess: (data) => {
-        // Open the Polar checkout URL
-        window.open(data.url, "_blank");
-      },
-      onError: (error) => {
-        console.error(error);
-        toast.error("Error creating checkout");
-      },
-    });
+    purchaseCredits(amountInCents);
   };
 
   return (
