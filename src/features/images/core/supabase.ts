@@ -6,7 +6,7 @@ import {
 } from "../types";
 
 export const IMAGES_BUCKET_NAME = "images";
-export const TEMPORARY_IMAGES_BUCKET_NAME = "temporary-images";
+export const TEMP_IMAGES_BUCKET_NAME = "temp-images";
 
 /**
  * Upload a file to Supabase storage

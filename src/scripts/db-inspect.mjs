@@ -19,6 +19,18 @@ for (const { tablename } of tables) {
   console.log(`  ${tablename}: ${count} rows`);
 }
 
+const fks = await sql`
+  SELECT conname, conrelid::regclass AS tbl, confdeltype
+  FROM pg_constraint
+  WHERE contype = 'f' AND connamespace = 'public'::regnamespace
+  ORDER BY conname
+`;
+console.log(`\nforeign keys (${fks.length}):`);
+for (const f of fks) {
+  const onDelete = f.confdeltype === "c" ? "cascade" : f.confdeltype;
+  console.log(`  ${f.tbl}.${f.conname} onDelete=${onDelete}`);
+}
+
 console.log("\ndrizzle migration history:");
 try {
   const rows = await sql`SELECT hash, created_at FROM drizzle.__drizzle_migrations ORDER BY created_at`;

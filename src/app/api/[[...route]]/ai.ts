@@ -16,7 +16,7 @@ import {
 import {
   getSignedUrl,
   IMAGES_BUCKET_NAME,
-  TEMPORARY_IMAGES_BUCKET_NAME,
+  TEMP_IMAGES_BUCKET_NAME,
   uploadFileToSupabase,
 } from "@/features/images/core/supabase";
 import { convertToFile } from "@/features/images/utils";
@@ -117,13 +117,13 @@ const app = new Hono()
           userId: auth.token.id,
           projectId: projectId,
           prefix: "temp",
-          bucketName: TEMPORARY_IMAGES_BUCKET_NAME,
+          bucketName: TEMP_IMAGES_BUCKET_NAME,
         });
 
         canvasImage = await getSignedUrl(
           canvasImageUrl.path,
           15,
-          TEMPORARY_IMAGES_BUCKET_NAME,
+          TEMP_IMAGES_BUCKET_NAME,
         );
       }
 

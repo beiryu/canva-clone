@@ -1,12 +1,20 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { client } from "@/lib/hono";
 
-export const useGetUnsplashImages = () => {
-  const query = useQuery({
-    queryKey: ["images", "unsplash"],
+// Unsplash demo apps are limited to 50 requests/hour, so keep results fresh for
+// a while instead of refetching on every sidebar open.
+const UNSPLASH_STALE_TIME = 5 * 60 * 1000;
+
+export const useGetUnsplashImages = (query?: string) => {
+  const search = query?.trim() || "";
+
+  const result = useQuery({
+    queryKey: ["images", "unsplash", search],
     queryFn: async () => {
-      const response = await client.api.images.unsplash.$get();
+      const response = await client.api.images.unsplash.$get({
+        query: { query: search },
+      });
 
       if (!response.ok) {
         throw new Error("Failed to fetch Unsplash images");
@@ -15,9 +23,12 @@ export const useGetUnsplashImages = () => {
       const { data } = await response.json();
       return data;
     },
+    // Keep the previous grid on screen while a new search is in flight.
+    placeholderData: keepPreviousData,
+    staleTime: UNSPLASH_STALE_TIME,
   });
 
-  return query;
+  return result;
 };
 
 export const useGetUploadedImages = () => {
@@ -38,18 +49,19 @@ export const useGetUploadedImages = () => {
   return query;
 };
 
-// Combined hook to get both Unsplash and uploaded images
-export const useGetImages = () => {
-  const unsplashQuery = useGetUnsplashImages();
+// Combined hook to get both Unsplash and uploaded images. Loading/error state is
+// kept per source so a stock search never puts the uploads tab into a spinner.
+export const useGetImages = (query?: string) => {
+  const unsplashQuery = useGetUnsplashImages(query);
   const uploadedQuery = useGetUploadedImages();
-
-  const isLoading = unsplashQuery.isLoading || uploadedQuery.isLoading;
-  const isError = unsplashQuery.isError || uploadedQuery.isError;
 
   return {
     unsplashImages: unsplashQuery.data || [],
     uploadedImages: uploadedQuery.data || [],
-    isLoading,
-    isError,
+    isLoadingStock: unsplashQuery.isLoading,
+    isErrorStock: unsplashQuery.isError,
+    isFetchingStock: unsplashQuery.isFetching,
+    isLoadingUploads: uploadedQuery.isLoading,
+    isErrorUploads: uploadedQuery.isError,
   };
 };

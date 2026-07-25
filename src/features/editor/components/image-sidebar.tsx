@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { AlertTriangle, Loader, Upload } from "lucide-react";
-import { useRef } from "react";
+import { AlertTriangle, Loader, Search, Upload, X } from "lucide-react";
+import { useRef, useState } from "react";
 
 import { ActiveTool, Editor } from "@/features/editor/types";
 import { ToolSidebarClose } from "@/features/editor/components/tool-sidebar-close";
@@ -10,7 +10,9 @@ import { useGetImages } from "@/features/images/api/use-get-images";
 import { useUploadImage } from "@/features/images/api/use-upload-image";
 
 import { cn } from "@/lib/utils";
+import { useDebounce } from "@/hooks/use-debounce";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getImageUrl } from "@/features/images/utils";
@@ -30,11 +32,23 @@ export const ImageSidebar = ({
 }: ImageSidebarProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { unsplashImages, uploadedImages, isLoading, isError } = useGetImages();
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search);
+
+  const {
+    unsplashImages,
+    uploadedImages,
+    isLoadingStock,
+    isErrorStock,
+    isFetchingStock,
+    isLoadingUploads,
+    isErrorUploads,
+  } = useGetImages(debouncedSearch);
 
   const { mutate: uploadImage, isPending: isUploading } = useUploadImage();
 
   const onClose = () => {
+    setSearch("");
     onChangeActiveTool("select");
   };
 
@@ -98,19 +112,6 @@ export const ImageSidebar = ({
           )}
         </Button>
       </div>
-      {isLoading && (
-        <div className="flex items-center justify-center flex-1">
-          <Loader className="size-4 text-muted-foreground animate-spin" />
-        </div>
-      )}
-      {isError && (
-        <div className="flex flex-col gap-y-4 items-center justify-center flex-1">
-          <AlertTriangle className="size-4 text-muted-foreground" />
-          <p className="text-muted-foreground text-xs">
-            Failed to fetch images
-          </p>
-        </div>
-      )}
       <ScrollArea className="flex-1">
         <Tabs defaultValue="uploaded" className="w-full">
           <div className="px-4 pt-4">
@@ -125,7 +126,18 @@ export const ImageSidebar = ({
           </div>
 
           <TabsContent value="uploaded" className="p-4 pt-2">
-            {uploadedImages && uploadedImages.length > 0 ? (
+            {isLoadingUploads ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader className="size-4 text-muted-foreground animate-spin" />
+              </div>
+            ) : isErrorUploads ? (
+              <div className="flex flex-col gap-y-4 items-center justify-center py-8">
+                <AlertTriangle className="size-4 text-muted-foreground" />
+                <p className="text-muted-foreground text-xs">
+                  Failed to fetch images
+                </p>
+              </div>
+            ) : uploadedImages && uploadedImages.length > 0 ? (
               <div className="grid grid-cols-2 gap-4">
                 {uploadedImages.map((image) => (
                   <button
@@ -155,9 +167,51 @@ export const ImageSidebar = ({
           </TabsContent>
 
           <TabsContent value="stock" className="p-4 pt-2">
-            <div className="grid grid-cols-2 gap-4">
-              {unsplashImages &&
-                unsplashImages.map((image) => (
+            <div className="relative mb-4">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search photos..."
+                className="h-9 pl-8 pr-14"
+              />
+              {isFetchingStock && (
+                <Loader className="absolute right-8 top-1/2 -translate-y-1/2 size-4 text-muted-foreground animate-spin" />
+              )}
+              {search.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  aria-label="Clear search"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition"
+                >
+                  <X className="size-4" />
+                </button>
+              )}
+            </div>
+
+            {isLoadingStock ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader className="size-4 text-muted-foreground animate-spin" />
+              </div>
+            ) : isErrorStock ? (
+              <div className="flex flex-col gap-y-4 items-center justify-center py-8">
+                <AlertTriangle className="size-4 text-muted-foreground" />
+                <p className="text-muted-foreground text-xs">
+                  Failed to fetch images
+                </p>
+              </div>
+            ) : unsplashImages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <p className="text-muted-foreground text-sm text-center">
+                  {debouncedSearch
+                    ? `No results for "${debouncedSearch}"`
+                    : "No stock images available"}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                {unsplashImages.map((image) => (
                   <button
                     onClick={() => editor?.addImage(image.urls.regular)}
                     key={image.id}
@@ -179,7 +233,8 @@ export const ImageSidebar = ({
                     </Link>
                   </button>
                 ))}
-            </div>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </ScrollArea>

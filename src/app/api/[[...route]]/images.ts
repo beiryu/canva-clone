@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import { verifyAuth } from "@hono/auth-js";
+import { zValidator } from "@hono/zod-validator";
 import { desc, eq } from "drizzle-orm";
+import { z } from "zod";
 
 import { unsplash } from "@/lib/unsplash";
 import { uploadedImages } from "@/db/schema";
@@ -9,29 +11,76 @@ import {
   IMAGES_BUCKET_NAME,
   uploadFileToSupabase,
 } from "@/features/images/core/supabase";
+import { StockImage } from "@/features/images/types";
 
 const DEFAULT_COUNT = 50;
 const DEFAULT_COLLECTION_IDS = ["317099"];
+// Unsplash caps search results at 30 per page.
+const SEARCH_PER_PAGE = 30;
+
+type UnsplashPhoto = {
+  id: string;
+  alt_description: string | null;
+  urls: { regular: string; small: string; thumb: string };
+  links: { html: string };
+  user: { name: string };
+};
+
+const toStockImage = (photo: UnsplashPhoto): StockImage => ({
+  id: photo.id,
+  alt_description: photo.alt_description,
+  urls: {
+    regular: photo.urls.regular,
+    small: photo.urls.small,
+    thumb: photo.urls.thumb,
+  },
+  links: { html: photo.links.html },
+  user: { name: photo.user.name },
+});
 
 const app = new Hono()
-  .get("/unsplash", verifyAuth(), async (c) => {
-    const images = await unsplash.photos.getRandom({
-      collectionIds: DEFAULT_COLLECTION_IDS,
-      count: DEFAULT_COUNT,
-    });
+  .get(
+    "/unsplash",
+    verifyAuth(),
+    zValidator("query", z.object({ query: z.string().trim().optional() })),
+    async (c) => {
+      const { query } = c.req.valid("query");
 
-    if (images.errors) {
-      return c.json({ error: "Something went wrong" }, 400);
-    }
+      if (query) {
+        const images = await unsplash.search.getPhotos({
+          query,
+          perPage: SEARCH_PER_PAGE,
+        });
 
-    let response = images.response;
+        if (images.errors) {
+          return c.json({ error: "Something went wrong" }, 400);
+        }
 
-    if (!Array.isArray(response)) {
-      response = [response];
-    }
+        const data: StockImage[] = images.response.results.map(toStockImage);
 
-    return c.json({ data: response });
-  })
+        return c.json({ data });
+      }
+
+      const images = await unsplash.photos.getRandom({
+        collectionIds: DEFAULT_COLLECTION_IDS,
+        count: DEFAULT_COUNT,
+      });
+
+      if (images.errors) {
+        return c.json({ error: "Something went wrong" }, 400);
+      }
+
+      let response = images.response;
+
+      if (!Array.isArray(response)) {
+        response = [response];
+      }
+
+      const data: StockImage[] = response.map(toStockImage);
+
+      return c.json({ data });
+    },
+  )
   .get("/uploaded", verifyAuth(), async (c) => {
     const auth = c.get("authUser");
 
