@@ -1,1 +1,0 @@
-ALTER TABLE "subscription" ADD COLUMN "type" text NOT NULL;

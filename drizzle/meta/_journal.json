@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1747395285035,
-      "tag": "0000_fair_luke_cage",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1747398662158,
-      "tag": "0001_fixed_thena",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1784952046149,
-      "tag": "0002_overjoyed_mister_fear",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1784952254292,
-      "tag": "0003_fast_kitty_pryde",
+      "when": 1784952515655,
+      "tag": "0000_init",
       "breakpoints": true
     }
   ]
