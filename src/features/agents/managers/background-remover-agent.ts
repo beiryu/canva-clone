@@ -28,17 +28,14 @@ export class BackgroundRemoverAgent {
     }
 
     try {
-      // Get the appropriate model handler from the provider
       const modelHandler = provider.getModelHandler(options.model);
 
-      // Ensure the handler implements BackgroundRemoverHandler
       if (!this.isBackgroundRemoverHandler(modelHandler)) {
         throw new Error(
           `Model ${options.model} does not support removing background`,
         );
       }
 
-      // Call the handler's removeBg method
       return modelHandler.removeBg(options);
     } catch (error) {
       console.error(
@@ -49,7 +46,6 @@ export class BackgroundRemoverAgent {
     }
   }
 
-  // Type guard to check if a model handler implements BackgroundRemoverHandler
   private isBackgroundRemoverHandler(
     handler: any,
   ): handler is BackgroundRemoverHandler {

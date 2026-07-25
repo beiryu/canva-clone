@@ -94,7 +94,6 @@ class FluxKontextProHandler
   }
 }
 
-// Model handler for Flux Pro Ultra
 class Flux11ProUltraHandler
   extends BaseModelHandler
   implements ImageGenerationHandler
@@ -292,7 +291,6 @@ class ReplicateTextHandler
   }
 }
 
-// Model handler for Background Remover
 class LabsBackgroundRemoverHandler
   extends BaseModelHandler
   implements BackgroundRemoverHandler
@@ -344,7 +342,6 @@ export class ReplicateProvider implements AgentProvider {
   private modelHandlers: Map<string, ModelHandler> = new Map();
 
   constructor() {
-    // Initialize handlers for each model
     this.registerHandler(new FluxKontextProHandler());
     this.registerHandler(new Flux11ProUltraHandler());
     this.registerHandler(new FluxSchnellHandler());

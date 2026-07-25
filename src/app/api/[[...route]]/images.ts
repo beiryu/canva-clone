@@ -280,7 +280,6 @@ const app = new Hono()
         return c.json({ error: "Project ID is required" }, 400);
       }
 
-      // Upload the image to Supabase
       const uploadResult = await uploadFileToSupabase({
         file: image,
         userId: auth.token.id,
@@ -289,7 +288,6 @@ const app = new Hono()
         bucketName: IMAGES_BUCKET_NAME,
       });
 
-      // Save the image metadata to the database
       const now = new Date();
       const [savedImage] = await db
         .insert(uploadedImages)

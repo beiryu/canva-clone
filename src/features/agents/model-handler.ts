@@ -19,16 +19,10 @@ export abstract class BaseModelHandler implements ModelHandler {
     return config;
   }
 
-  /**
-   * Check if the model supports a specific capability
-   */
   supportsCapability(capability: ModelCapability): boolean {
     return this.capabilities.includes(capability);
   }
 
-  /**
-   * Validate that the model supports the capabilities required for an operation
-   */
   validateCapabilities(requiredCapabilities: ModelCapability[]): void {
     for (const capability of requiredCapabilities) {
       if (!this.supportsCapability(capability)) {

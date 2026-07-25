@@ -43,7 +43,6 @@ export function ImageCard({ image }: ImageCardProps) {
     <Card className="overflow-hidden bg-black border-card rounded-lg">
       <div className="flex flex-col md:flex-row">
         <div className="relative w-full md:w-3/4 h-[300px] md:h-[400px]">
-          {/* Status indicator */}
           <AnimatePresence>
             {image.id === "id" && (
               <motion.div
@@ -63,7 +62,6 @@ export function ImageCard({ image }: ImageCardProps) {
             )}
           </AnimatePresence>
 
-          {/* Image content */}
           <AnimatePresence mode="wait">
             {image.id === "id" ? (
               <motion.div
@@ -125,7 +123,6 @@ export function ImageCard({ image }: ImageCardProps) {
             )}
           </AnimatePresence>
 
-          {/* Action buttons */}
           {image.id !== "id" && (
             <div className="absolute bottom-3 right-3 flex gap-2">
               <Button
@@ -155,9 +152,7 @@ export function ImageCard({ image }: ImageCardProps) {
           )}
         </div>
 
-        {/* Prompt, style, settings */}
         <div className="w-full md:w-1/4 p-4 bg-[#0a0a0a] flex flex-col justify-between">
-          {/* Prompt */}
           <div className="space-y-3">
             {image.prompt && (
               <div>
@@ -172,7 +167,6 @@ export function ImageCard({ image }: ImageCardProps) {
               </div>
             )}
 
-            {/* Style */}
             {style && (
               <div>
                 <p className="text-xs text-gray-500 mb-1">Visual Style</p>
@@ -191,7 +185,6 @@ export function ImageCard({ image }: ImageCardProps) {
               </div>
             )}
 
-            {/* Model */}
             {getModelDisplayName(image.model) && (
               <div>
                 <p className="text-xs text-gray-500 mb-1">Model</p>
@@ -201,7 +194,6 @@ export function ImageCard({ image }: ImageCardProps) {
               </div>
             )}
 
-            {/* Settings */}
             <div>
               <p className="text-xs text-gray-500 mb-1">Settings</p>
               <div className="space-y-1">

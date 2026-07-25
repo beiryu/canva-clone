@@ -236,7 +236,6 @@ const app = new Hono()
       return c.json({ data: data[0] });
     },
   )
-  // Get generated images for a project
   .get(
     "/:id/images",
     verifyAuth(),
@@ -249,7 +248,6 @@ const app = new Hono()
         return c.json({ error: "Unauthorized" }, 401);
       }
 
-      // First verify the user owns the project
       const projectData = await db
         .select()
         .from(projects)
@@ -259,7 +257,6 @@ const app = new Hono()
         return c.json({ error: "Project not found" }, 404);
       }
 
-      // Get all generated images for this project
       const images = await db
         .select()
         .from(generatedImages)

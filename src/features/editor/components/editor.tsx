@@ -13,7 +13,6 @@ import {
   selectionDependentPanels,
 } from "@/features/editor/types";
 import { Navbar } from "@/features/editor/components/navbar";
-import { Footer } from "@/features/editor/components/footer";
 import { useEditor } from "@/features/editor/hooks/use-editor";
 import { useRemoveBackground } from "@/features/editor/hooks/use-remove-background";
 import { useCrop } from "@/features/editor/hooks/use-crop";
@@ -263,7 +262,6 @@ export const Editor = ({ initialData }: EditorProps) => {
               <div className="flex-1 h-[calc(90%)] bg-muted" ref={containerRef}>
                 <canvas ref={canvasRef} />
               </div>
-              {/* <Footer editor={editor} /> */}
             </ResizablePanel>
             <ResizableHandle withHandle />
             <ResizablePanel className="bg-black p-0" minSize={0}>

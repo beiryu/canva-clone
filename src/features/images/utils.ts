@@ -16,16 +16,13 @@ export async function convertToFile(
     fileType?: string;
   } = {},
 ): Promise<File> {
-  // Default options
   const {
     filePrefix = "generated",
     fileName = `image_${Date.now()}`,
     fileType = "image/webp",
   } = options;
 
-  // Determine the type of input data
   if (imageData instanceof Blob) {
-    // Case: Already a Blob object
     const contentType = fileType;
     const fileExt = contentType.split("/")[1] || "webp";
     const finalFileName = `${filePrefix}_${Date.now()}.${fileExt}`;
@@ -37,9 +34,7 @@ export async function convertToFile(
     throw new Error("Unsupported image data format");
   }
 
-  // Handle string input types with switch case
   switch (true) {
-    // Case 1: Remote URL
     case imageData.startsWith("http"): {
       const response = await fetch(imageData);
       if (!response.ok) {
@@ -54,7 +49,6 @@ export async function convertToFile(
       return new File([blob], finalFileName, { type: contentType });
     }
 
-    // Case 2: Base64 data URL
     case imageData.startsWith("data:"): {
       const [metaPart, dataPart] = imageData.split(",");
       const contentType = metaPart
@@ -63,7 +57,6 @@ export async function convertToFile(
       const fileExt = contentType.split("/")[1] || "webp";
       const finalFileName = `${filePrefix}_${Date.now()}.${fileExt}`;
 
-      // Convert base64 to binary
       const byteString = atob(dataPart);
       const arrayBuffer = new ArrayBuffer(byteString.length);
       const uint8Array = new Uint8Array(arrayBuffer);
@@ -76,14 +69,12 @@ export async function convertToFile(
       return new File([blob], finalFileName, { type: contentType });
     }
 
-    // Case 3: Raw base64 string with no data-URL prefix
     case /^[A-Za-z0-9+/=]+$/.test(imageData.trim()): {
       try {
         const contentType = fileType;
         const fileExt = contentType.split("/")[1] || "webp";
         const finalFileName = `${filePrefix}_${Date.now()}.${fileExt}`;
 
-        // Convert base64 to binary
         const byteString = atob(imageData.trim());
         const arrayBuffer = new ArrayBuffer(byteString.length);
         const uint8Array = new Uint8Array(arrayBuffer);
@@ -100,7 +91,7 @@ export async function convertToFile(
       }
     }
 
-    // Case 4: Plain string (likely URL from AI model output)
+    // Most likely a plain URL emitted by an AI model.
     default: {
       try {
         const response = await fetch(imageData);

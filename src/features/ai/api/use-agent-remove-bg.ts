@@ -39,10 +39,8 @@ export const useAgentRemoveBg = () => {
       toastId: toast.loading("Removing background..."),
     }),
     onSuccess: ({ data: { projectId } }, _variables, context) => {
-      // Invalidate the uploaded images query to refresh the list
       queryClient.invalidateQueries({ queryKey: ["images", "uploaded"] });
 
-      // Also invalidate project images if they're being used
       if (projectId) {
         queryClient.invalidateQueries({
           queryKey: ["project-images", { projectId }],

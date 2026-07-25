@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  LayoutTemplate,
-  ImageIcon,
-  Pencil,
-  Settings,
-  Shapes,
-  Type,
-} from "lucide-react";
+import { ImageIcon, Pencil, Settings, Shapes, Type } from "lucide-react";
 
 import { ActivePanel, CanvasMode } from "@/features/editor/types";
 import { SidebarItem } from "@/features/editor/components/sidebar-item";
@@ -34,12 +27,6 @@ export const Sidebar = ({
           isActive={canvasMode === "draw"}
           onClick={onToggleDrawMode}
         />
-        {/* <SidebarItem
-          icon={LayoutTemplate}
-          label="Design"
-          isActive={activePanel === "templates"}
-          onClick={() => onTogglePanel("templates")}
-        /> */}
         <SidebarItem
           icon={ImageIcon}
           label="Image"

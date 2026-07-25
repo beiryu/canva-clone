@@ -55,7 +55,6 @@ const app = new Hono()
         image,
       });
 
-      // Upload the result to Supabase
       const uploadResult = await uploadFileToSupabase({
         file: result.file,
         userId: auth.token.id,
@@ -64,7 +63,6 @@ const app = new Hono()
         bucketName: IMAGES_BUCKET_NAME,
       });
 
-      // Save the image metadata to the database
       const now = new Date();
       const [savedImage] = await db
         .insert(uploadedImages)
@@ -146,7 +144,6 @@ const app = new Hono()
         );
       }
 
-      // Initialize the agent manager with API keys from env
       const agentManager = new AgentManager();
 
       try {
@@ -158,7 +155,6 @@ const app = new Hono()
           settings: { aspectRatio, quality, strictness },
         });
 
-        // Upload the result to Supabase
         const { fullPath } = await uploadFileToSupabase({
           file: result.file,
           userId: auth.token.id,
@@ -167,7 +163,6 @@ const app = new Hono()
           bucketName: IMAGES_BUCKET_NAME,
         });
 
-        // Save the image metadata to the database
         const [savedImage] = await db
           .insert(generatedImages)
           .values({

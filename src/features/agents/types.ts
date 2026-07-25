@@ -25,7 +25,6 @@ export type ImageQuality = (typeof IMAGE_QUALITIES)[number];
 
 export type SketchGuidanceStrictness = (typeof SKETCH_STRICTNESS)[number];
 
-// Base options interface for all generation types
 export interface BaseGenerationOptions {
   model: AnyModel;
 }
@@ -49,7 +48,6 @@ export interface RemoveBgOptions extends BaseGenerationOptions {
   image: string;
 }
 
-// Result interfaces
 export interface ImageGenerationResult {
   file: File;
   providerName?: string;
@@ -64,21 +62,18 @@ export interface RemoveBgResult {
   file: File;
 }
 
-// Provider API interfaces
 export interface AgentProvider {
   name: string;
   supportedCapabilities: ModelCapability[];
   getModelHandler: (model: string) => ModelHandler;
 }
 
-// Model handler interface
 export interface ModelHandler {
   model: string;
   capabilities: ModelCapability[];
   supportsModel: (model: string) => boolean;
 }
 
-// Specific capability interfaces
 export interface ImageGenerationHandler extends ModelHandler {
   generateImage: (
     options: ImageGenerationOptions,

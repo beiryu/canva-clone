@@ -10,9 +10,6 @@ export const TEMP_IMAGES_BUCKET_NAME = "temp-images";
 
 const MAX_REMOTE_IMAGE_BYTES = 10 * 1024 * 1024;
 
-/**
- * Upload a file to Supabase storage
- */
 export async function uploadFileToSupabase(
   request: RequestUploadFile,
 ): Promise<ResponseUploadedFile> {
@@ -48,9 +45,6 @@ export async function uploadFileToSupabase(
   };
 }
 
-/**
- * Download remote image and upload it to Supabase storage
- */
 export async function uploadRemoteImageToSupabase(
   request: RequestUploadRemoteImage,
 ): Promise<ResponseUploadedFile> {
@@ -63,13 +57,11 @@ export async function uploadRemoteImageToSupabase(
       bucketName = IMAGES_BUCKET_NAME,
     } = request;
 
-    // Fetch the image from the remote URL
     const response = await fetch(imageUrl);
     if (!response.ok) {
       throw new Error(`Failed to fetch image: ${response.statusText}`);
     }
 
-    // Get the content type and create a blob
     const contentType = response.headers.get("content-type") || "image/png";
 
     // Remote hosts happily serve HTML error pages with a 200; storing one would
@@ -86,11 +78,9 @@ export async function uploadRemoteImageToSupabase(
       );
     }
 
-    // Create a file from the blob
     const fileName = `${prefix}_${Date.now()}.${contentType.split("/")[1] || "png"}`;
     const file = new File([blob], fileName, { type: contentType });
 
-    // Upload to Supabase
     const result = await uploadFileToSupabase({
       file,
       userId,
@@ -122,7 +112,7 @@ export async function getSignedUrl(
 ): Promise<string> {
   const { data, error } = await supabaseAdmin.storage
     .from(bucketName)
-    .createSignedUrl(path, expiresIn * 60); // Convert minutes to seconds
+    .createSignedUrl(path, expiresIn * 60);
 
   if (error) {
     console.error("Error generating signed URL:", error);

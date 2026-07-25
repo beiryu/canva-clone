@@ -30,17 +30,14 @@ export class ImageAgent {
     }
 
     try {
-      // Get the appropriate model handler from the provider
       const modelHandler = provider.getModelHandler(options.model);
 
-      // Ensure the handler implements ImageGenerationHandler
       if (!this.isImageGenerationHandler(modelHandler)) {
         throw new Error(
           `Model ${options.model} does not support image generation`,
         );
       }
 
-      // Call the handler's generateImage method
       return modelHandler.generateImage(options);
     } catch (error) {
       console.error(
@@ -51,7 +48,6 @@ export class ImageAgent {
     }
   }
 
-  // Type guard to check if a model handler implements ImageGenerationHandler
   private isImageGenerationHandler(
     handler: any,
   ): handler is ImageGenerationHandler {

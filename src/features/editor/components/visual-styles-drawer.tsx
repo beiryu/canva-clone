@@ -52,7 +52,6 @@ export default function VisualStylesDrawer() {
           </DrawerHeader>
 
           <div className="p-6">
-            {/* Visual Styles Grid */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {visualStyles.map((style) => (
                 <button
@@ -75,7 +74,6 @@ export default function VisualStylesDrawer() {
                     priority
                     className="w-full aspect-square object-cover transition-transform duration-300 group-hover:scale-125"
                   />
-                  {/* Style Name Overlay - Always Visible with Hover Effect */}
                   <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 flex items-center justify-center transition-all duration-200">
                     <span className="text-3xl font-bold drop-shadow-md uppercase">
                       {style.name}

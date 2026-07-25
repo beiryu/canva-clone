@@ -43,7 +43,6 @@ interface GenerateSidebarProps {
   projectId: string;
 }
 
-// Action type
 type FormAction =
   | {
       type: "UPDATE_FORM";
@@ -55,7 +54,6 @@ type FormAction =
       patch: Partial<GenerateState["formData"]>;
     };
 
-// Reducer function
 const reducer = (state: GenerateState, action: FormAction): GenerateState => {
   switch (action.type) {
     case "UPDATE_FORM":
@@ -96,7 +94,6 @@ export const GenerateSidebar = ({
   const agentGenerateImage = useAgentGenerateImage();
   const agentEnhancePrompt = useAgentEnhancePrompt();
 
-  // Get model params based on selected model
   const getModelParams = useCallback(() => {
     return modelRegistry.get(model)?.params ?? {};
   }, [model]);
@@ -184,7 +181,6 @@ export const GenerateSidebar = ({
         ? editor.canvas?.toDataURL({ format: "png", quality: 1 })
         : undefined;
 
-    // Use the agent-based image generation
     await agentGenerateImage.mutateAsync({
       projectId,
       prompt: formData.prompt,
@@ -274,7 +270,6 @@ export const GenerateSidebar = ({
               </div>
             </div>
 
-            {/* Model Selection */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Model</label>
               <div className="flex items-center gap-2">
@@ -315,7 +310,6 @@ export const GenerateSidebar = ({
               </div>
             </div>
 
-            {/* Sketch Guidance Controls */}
             {modelParams.supportsImageInput && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Sketch Guidance</Label>
@@ -374,7 +368,6 @@ export const GenerateSidebar = ({
                 </Select>
               </div>
             )}
-            {/* Aspect Ratio Selection */}
             <div className="space-y-2">
               <Label className="text-sm font-medium">Aspect Ratio</Label>
               <Select
@@ -418,7 +411,6 @@ export const GenerateSidebar = ({
               </Select>
             </div>
 
-            {/* Quality Selection */}
             {modelParams.quality && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Quality</Label>

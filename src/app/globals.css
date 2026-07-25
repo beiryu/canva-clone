@@ -9,55 +9,55 @@ body {
 
 @layer base {
   :root {
-    --background: 224 16% 8%; /* deep dark gray */
-    --foreground: 0 0% 100%; /* white */
+    --background: 224 16% 8%;
+    --foreground: 0 0% 100%;
 
-    --card: 224 16% 10%; /* darker card */
-    --card-foreground: 0 0% 100%; /* white */
+    --card: 224 16% 10%;
+    --card-foreground: 0 0% 100%;
 
     --primary: 75 100% 60%; /* neon yellow-green (#D6FF3A) */
-    --primary-foreground: 224 16% 8%; /* dark for contrast */
+    --primary-foreground: 224 16% 8%;
 
-    --secondary: 224 16% 12%; /* darker muted dark gray */
-    --secondary-foreground: 0 0% 100%; /* white */
+    --secondary: 224 16% 12%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 224 16% 10%; /* darker muted gray */
-    --muted-foreground: 0 0% 80%; /* light gray */
+    --muted: 224 16% 10%;
+    --muted-foreground: 0 0% 80%;
 
-    --accent: 75 100% 60%; /* neon yellow-green */
-    --accent-foreground: 224 16% 6%; /* darker for contrast */
+    --accent: 75 100% 60%;
+    --accent-foreground: 224 16% 6%;
 
-    --border: 224 16% 14%; /* darker muted border */
-    --input: 224 16% 14%; /* darker input */
+    --border: 224 16% 14%;
+    --input: 224 16% 14%;
 
-    --ring: 75 100% 60%; /* neon accent for focus */
+    --ring: 75 100% 60%;
 
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 224 16% 8%; /* deep dark gray */
-    --foreground: 0 0% 100%; /* white */
+    --background: 224 16% 8%;
+    --foreground: 0 0% 100%;
 
-    --card: 224 16% 10%; /* darker card */
-    --card-foreground: 0 0% 100%; /* white */
+    --card: 224 16% 10%;
+    --card-foreground: 0 0% 100%;
 
     --primary: 75 100% 60%; /* neon yellow-green (#D6FF3A) */
-    --primary-foreground: 224 16% 8%; /* dark for contrast */
+    --primary-foreground: 224 16% 8%;
 
-    --secondary: 224 16% 12%; /* darker muted dark gray */
-    --secondary-foreground: 0 0% 100%; /* white */
+    --secondary: 224 16% 12%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 224 16% 10%; /* darker muted gray */
-    --muted-foreground: 0 0% 80%; /* light gray */
+    --muted: 224 16% 10%;
+    --muted-foreground: 0 0% 80%;
 
-    --accent: 75 100% 60%; /* neon yellow-green */
-    --accent-foreground: 224 16% 6%; /* darker for contrast */
+    --accent: 75 100% 60%;
+    --accent-foreground: 224 16% 6%;
 
-    --border: 224 16% 14%; /* darker muted border */
-    --input: 224 16% 14%; /* darker input */
+    --border: 224 16% 14%;
+    --input: 224 16% 14%;
 
-    --ring: 75 100% 60%; /* neon accent for focus */
+    --ring: 75 100% 60%;
   }
 }
 

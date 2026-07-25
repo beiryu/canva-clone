@@ -70,7 +70,6 @@ export const ImageSidebar = ({
     } catch (error) {
       console.error("Upload failed:", error);
     } finally {
-      // Reset the file input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }

@@ -30,10 +30,8 @@ export class TextAgent {
     }
 
     try {
-      // Get the appropriate model handler from the provider
       const modelHandler = provider.getModelHandler(options.model);
 
-      // Ensure the handler implements TextGenerationHandler
       if (!this.isTextGenerationHandler(modelHandler)) {
         throw new Error(
           `Model ${options.model} does not support text generation`,
@@ -50,7 +48,6 @@ export class TextAgent {
     }
   }
 
-  // Type guard to check if a model handler implements TextGenerationHandler
   private isTextGenerationHandler(
     handler: any,
   ): handler is TextGenerationHandler {

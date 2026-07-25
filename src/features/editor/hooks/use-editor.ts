@@ -312,7 +312,6 @@ const buildEditor = ({
       canvas.getActiveObjects().forEach((object) => {
         if (isTextType(object.type)) {
           // @ts-ignore
-          // Faulty TS library, fontSize exists.
           object.set({ fontSize: value });
         }
       });
@@ -326,7 +325,6 @@ const buildEditor = ({
       }
 
       // @ts-ignore
-      // Faulty TS library, fontSize exists.
       const value = selectedObject.get("fontSize") || FONT_SIZE;
 
       return value;
@@ -335,7 +333,6 @@ const buildEditor = ({
       canvas.getActiveObjects().forEach((object) => {
         if (isTextType(object.type)) {
           // @ts-ignore
-          // Faulty TS library, textAlign exists.
           object.set({ textAlign: value });
         }
       });
@@ -349,7 +346,6 @@ const buildEditor = ({
       }
 
       // @ts-ignore
-      // Faulty TS library, textAlign exists.
       const value = selectedObject.get("textAlign") || "left";
 
       return value;
@@ -358,7 +354,6 @@ const buildEditor = ({
       canvas.getActiveObjects().forEach((object) => {
         if (isTextType(object.type)) {
           // @ts-ignore
-          // Faulty TS library, underline exists.
           object.set({ underline: value });
         }
       });
@@ -372,7 +367,6 @@ const buildEditor = ({
       }
 
       // @ts-ignore
-      // Faulty TS library, underline exists.
       const value = selectedObject.get("underline") || false;
 
       return value;
@@ -381,7 +375,6 @@ const buildEditor = ({
       canvas.getActiveObjects().forEach((object) => {
         if (isTextType(object.type)) {
           // @ts-ignore
-          // Faulty TS library, linethrough exists.
           object.set({ linethrough: value });
         }
       });
@@ -395,7 +388,6 @@ const buildEditor = ({
       }
 
       // @ts-ignore
-      // Faulty TS library, linethrough exists.
       const value = selectedObject.get("linethrough") || false;
 
       return value;
@@ -404,7 +396,6 @@ const buildEditor = ({
       canvas.getActiveObjects().forEach((object) => {
         if (isTextType(object.type)) {
           // @ts-ignore
-          // Faulty TS library, fontStyle exists.
           object.set({ fontStyle: value });
         }
       });
@@ -418,7 +409,6 @@ const buildEditor = ({
       }
 
       // @ts-ignore
-      // Faulty TS library, fontStyle exists.
       const value = selectedObject.get("fontStyle") || "normal";
 
       return value;
@@ -427,7 +417,6 @@ const buildEditor = ({
       canvas.getActiveObjects().forEach((object) => {
         if (isTextType(object.type)) {
           // @ts-ignore
-          // Faulty TS library, fontWeight exists.
           object.set({ fontWeight: value });
         }
       });
@@ -489,7 +478,6 @@ const buildEditor = ({
       canvas.getActiveObjects().forEach((object) => {
         if (isTextType(object.type)) {
           // @ts-ignore
-          // Faulty TS library, fontFamily exists.
           object.set({ fontFamily: value });
         }
       });
@@ -628,7 +616,6 @@ const buildEditor = ({
       }
 
       // @ts-ignore
-      // Faulty TS library, fontWeight exists.
       const value = selectedObject.get("fontWeight") || FONT_WEIGHT;
 
       return value;
@@ -641,7 +628,6 @@ const buildEditor = ({
       }
 
       // @ts-ignore
-      // Faulty TS library, fontFamily exists.
       const value = selectedObject.get("fontFamily") || fontFamily;
 
       return value;
@@ -848,10 +834,7 @@ export const useEditor = ({
       canvasHistory.current = [currentState];
       setHistoryIndex(0);
     },
-    [
-      canvasHistory, // No need, this is from useRef
-      setHistoryIndex, // No need, this is from useState
-    ],
+    [canvasHistory, setHistoryIndex],
   );
 
   return { init, editor };

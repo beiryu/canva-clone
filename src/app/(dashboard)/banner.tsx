@@ -32,7 +32,6 @@ export const Banner = () => {
 
   return (
     <div className="relative overflow-hidden rounded-xl bg-background p-8 md:p-10">
-      {/* Abstract neural network background pattern */}
       <div className="absolute inset-0 opacity-10">
         <Image
           src="/bg.jpg"
@@ -44,9 +43,7 @@ export const Banner = () => {
         />
       </div>
 
-      {/* Content container */}
       <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-6 md:gap-10">
-        {/* Icon */}
         <div className="flex-shrink-0">
           <motion.div
             initial={{ y: 0 }}
@@ -85,7 +82,6 @@ export const Banner = () => {
           </motion.div>
         </div>
 
-        {/* Text content */}
         <div className="flex-1 space-y-4">
           <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground leading-tight">
             Sketch to Thumbnail{" "}
@@ -118,11 +114,9 @@ export const Banner = () => {
         </div>
       </div>
 
-      {/* Floating elements for visual interest */}
       <div className="absolute top-10 right-10 w-20 h-20 rounded-full bg-primary/10 blur-xl"></div>
       <div className="absolute bottom-10 left-1/4 w-32 h-32 rounded-full bg-accent/10 blur-xl"></div>
 
-      {/* Stats or features */}
       <div className="relative z-10 mt-10 pt-6 border-t border-border">
         <div className="flex flex-wrap justify-start md:justify-start gap-6 md:gap-12 text-sm">
           <div className="flex items-center gap-2">
