@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase";
 import {
   RequestUploadFile,
   RequestUploadRemoteImage,
@@ -25,7 +25,7 @@ export async function uploadFileToSupabase(
   const fileName = `${prefix}_${Date.now()}_${file.name}`;
   const path = `${userId}/${projectId}/${fileName}`;
 
-  const { data, error } = await supabase.storage
+  const { data, error } = await supabaseAdmin.storage
     .from(bucketName)
     .upload(path, file, {
       contentType: file.type,
@@ -105,7 +105,7 @@ export async function getSignedUrl(
   expiresIn: number = 60,
   bucketName: string = IMAGES_BUCKET_NAME,
 ): Promise<string> {
-  const { data, error } = await supabase.storage
+  const { data, error } = await supabaseAdmin.storage
     .from(bucketName)
     .createSignedUrl(path, expiresIn * 60); // Convert minutes to seconds
 
