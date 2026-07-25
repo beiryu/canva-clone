@@ -18,7 +18,7 @@ import {
 
 import { UserButton } from "@/features/auth/components/user-button";
 
-import { ActiveTool, Editor } from "@/features/editor/types";
+import { CanvasMode, Editor } from "@/features/editor/types";
 import { Logo } from "@/features/editor/components/logo";
 
 import { cn } from "@/lib/utils";
@@ -35,15 +35,15 @@ import {
 interface NavbarProps {
   id: string;
   editor: Editor | undefined;
-  activeTool: ActiveTool;
-  onChangeActiveTool: (tool: ActiveTool) => void;
+  canvasMode: CanvasMode;
+  onSelectMode: () => void;
 }
 
 export const Navbar = ({
   id,
   editor,
-  activeTool,
-  onChangeActiveTool,
+  canvasMode,
+  onSelectMode,
 }: NavbarProps) => {
   const data = useMutationState({
     filters: {
@@ -101,8 +101,8 @@ export const Navbar = ({
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => onChangeActiveTool("select")}
-            className={cn(activeTool === "select" && "bg-muted")}
+            onClick={onSelectMode}
+            className={cn(canvasMode === "select" && "bg-muted")}
           >
             <MousePointerClick className="size-4" />
           </Button>

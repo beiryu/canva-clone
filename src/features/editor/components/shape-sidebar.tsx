@@ -2,7 +2,7 @@ import { IoTriangle } from "react-icons/io5";
 import { FaDiamond } from "react-icons/fa6";
 import { FaCircle, FaSquare, FaSquareFull } from "react-icons/fa";
 
-import { ActiveTool, Editor } from "@/features/editor/types";
+import { Editor } from "@/features/editor/types";
 import { ShapeTool } from "@/features/editor/components/shape-tool";
 import { ToolSidebarClose } from "@/features/editor/components/tool-sidebar-close";
 import { ToolSidebarHeader } from "@/features/editor/components/tool-sidebar-header";
@@ -12,24 +12,20 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ShapeSidebarProps {
   editor: Editor | undefined;
-  activeTool: ActiveTool;
-  onChangeActiveTool: (tool: ActiveTool) => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export const ShapeSidebar = ({
   editor,
-  activeTool,
-  onChangeActiveTool,
+  isOpen,
+  onClose,
 }: ShapeSidebarProps) => {
-  const onClose = () => {
-    onChangeActiveTool("select");
-  };
-
   return (
     <aside
       className={cn(
         "bg-black relative border-r z-[40] w-[360px] h-full flex flex-col",
-        activeTool === "shapes" ? "visible" : "hidden",
+        isOpen ? "visible" : "hidden",
       )}
     >
       <ToolSidebarHeader

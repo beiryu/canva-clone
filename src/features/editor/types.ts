@@ -60,7 +60,7 @@ export const fonts = [
   "Lucida Console",
 ];
 
-export const selectionDependentTools = [
+export const selectionDependentPanels: ActivePanel[] = [
   "fill",
   "font",
   "filter",
@@ -92,23 +92,27 @@ export const colors = [
   "transparent",
 ];
 
-export type ActiveTool =
-  | "select"
+/**
+ * Which sidebar panel is currently open. `null` means no panel is open.
+ * Note: "draw" is not a panel — it is a canvas mode, see `CanvasMode`.
+ */
+export type ActivePanel =
   | "shapes"
   | "text"
   | "images"
-  | "draw"
+  | "templates"
+  | "settings"
+  | "ai"
   | "fill"
   | "stroke-color"
   | "stroke-width"
   | "font"
   | "opacity"
   | "filter"
-  | "settings"
-  | "ai"
-  | "remove-bg"
-  | "templates"
-  | "generate";
+  | "remove-bg";
+
+/** How the canvas reacts to the pointer. */
+export type CanvasMode = "select" | "draw";
 
 export const FILL_COLOR = "rgb(214, 255, 58, 1)";
 export const STROKE_COLOR = "rgba(214, 255, 58, 1)";

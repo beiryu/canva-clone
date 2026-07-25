@@ -1,5 +1,4 @@
 import {
-  ActiveTool,
   Editor,
   STROKE_COLOR,
   STROKE_WIDTH,
@@ -15,22 +14,17 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface DrawSidebarProps {
   editor: Editor | undefined;
-  activeTool: ActiveTool;
-  onChangeActiveTool: (tool: ActiveTool) => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export const DrawSidebar = ({
   editor,
-  activeTool,
-  onChangeActiveTool,
+  isOpen,
+  onClose,
 }: DrawSidebarProps) => {
   const colorValue = editor?.getActiveStrokeColor() || STROKE_COLOR;
   const widthValue = editor?.getActiveStrokeWidth() || STROKE_WIDTH;
-
-  const onClose = () => {
-    editor?.disableDrawingMode();
-    onChangeActiveTool("select");
-  };
 
   const onColorChange = (value: string) => {
     editor?.changeStrokeColor(value);
@@ -44,7 +38,7 @@ export const DrawSidebar = ({
     <aside
       className={cn(
         "bg-black relative border-r z-[40] w-[360px] h-full flex flex-col",
-        activeTool === "draw" ? "visible" : "hidden",
+        isOpen ? "visible" : "hidden",
       )}
     >
       <ToolSidebarHeader

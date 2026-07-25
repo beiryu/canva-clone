@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { AlertTriangle } from "lucide-react";
 
-import { ActiveTool, Editor } from "@/features/editor/types";
+import { Editor } from "@/features/editor/types";
 import { ToolSidebarClose } from "@/features/editor/components/tool-sidebar-close";
 import { ToolSidebarHeader } from "@/features/editor/components/tool-sidebar-header";
 
@@ -14,15 +14,15 @@ import { getImageUrl } from "@/features/images/utils";
 
 interface RemoveBgSidebarProps {
   editor: Editor | undefined;
-  activeTool: ActiveTool;
-  onChangeActiveTool: (tool: ActiveTool) => void;
+  isOpen: boolean;
+  onClose: () => void;
   projectId: string;
 }
 
 export const RemoveBgSidebar = ({
   editor,
-  activeTool,
-  onChangeActiveTool,
+  isOpen,
+  onClose,
   projectId,
 }: RemoveBgSidebarProps) => {
   const mutation = useAgentRemoveBg();
@@ -31,10 +31,6 @@ export const RemoveBgSidebar = ({
 
   // @ts-ignore
   const imageSrc = selectedObject?._originalElement?.currentSrc;
-
-  const onClose = () => {
-    onChangeActiveTool("select");
-  };
 
   const onClick = () => {
     mutation.mutate(
@@ -54,7 +50,7 @@ export const RemoveBgSidebar = ({
     <aside
       className={cn(
         "bg-black relative border-r z-[40] w-[360px] h-full flex flex-col",
-        activeTool === "remove-bg" ? "visible" : "hidden",
+        isOpen ? "visible" : "hidden",
       )}
     >
       <ToolSidebarHeader

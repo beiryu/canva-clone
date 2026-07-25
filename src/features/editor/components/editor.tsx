@@ -7,7 +7,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ResponseType } from "@/features/projects/api/use-get-project";
 import { useUpdateProject } from "@/features/projects/api/use-update-project";
 
-import { ActiveTool, selectionDependentTools } from "@/features/editor/types";
+import {
+  ActivePanel,
+  CanvasMode,
+  selectionDependentPanels,
+} from "@/features/editor/types";
 import { Navbar } from "@/features/editor/components/navbar";
 import { Footer } from "@/features/editor/components/footer";
 import { useEditor } from "@/features/editor/hooks/use-editor";
@@ -53,14 +57,18 @@ export const Editor = ({ initialData }: EditorProps) => {
     [mutate],
   );
 
-  const [activeTool, setActiveTool] = useState<ActiveTool>("select");
+  // Which sidebar panel is open, and how the canvas reacts to the pointer, are
+  // two independent concerns — collapsing them into one state is what used to
+  // make the "Select" button close whatever panel happened to be open.
+  const [activePanel, setActivePanel] = useState<ActivePanel | null>(null);
+  const [canvasMode, setCanvasMode] = useState<CanvasMode>("select");
   const [isGenerateSidebarOpen, setIsGenerateSidebarOpen] = useState(true);
 
   const onClearSelection = useCallback(() => {
-    if (selectionDependentTools.includes(activeTool)) {
-      setActiveTool("select");
-    }
-  }, [activeTool]);
+    setActivePanel((current) =>
+      current && selectionDependentPanels.includes(current) ? null : current,
+    );
+  }, []);
 
   const { init, editor } = useEditor({
     defaultState: initialData.json,
@@ -70,23 +78,35 @@ export const Editor = ({ initialData }: EditorProps) => {
     saveCallback: debouncedSave,
   });
 
-  const onChangeActiveTool = useCallback(
-    (tool: ActiveTool) => {
-      if (tool === "draw") {
-        editor?.enableDrawingMode();
-      }
+  const closePanel = useCallback(() => setActivePanel(null), []);
 
-      if (activeTool === "draw") {
-        editor?.disableDrawingMode();
-      }
+  const exitDrawMode = useCallback(() => {
+    editor?.disableDrawingMode();
+    setCanvasMode("select");
+  }, [editor]);
 
-      if (tool === activeTool) {
-        return setActiveTool("select");
-      }
+  const enterDrawMode = useCallback(() => {
+    editor?.enableDrawingMode();
+    setCanvasMode("draw");
+    // Panels are siblings in a flex row, so only one may be visible at a time.
+    setActivePanel(null);
+  }, [editor]);
 
-      setActiveTool(tool);
+  const toggleDrawMode = useCallback(() => {
+    if (canvasMode === "draw") {
+      exitDrawMode();
+      return;
+    }
+
+    enterDrawMode();
+  }, [canvasMode, enterDrawMode, exitDrawMode]);
+
+  const togglePanel = useCallback(
+    (panel: ActivePanel) => {
+      exitDrawMode();
+      setActivePanel((current) => (current === panel ? null : panel));
     },
-    [activeTool, editor],
+    [exitDrawMode],
   );
 
   const canvasRef = useRef(null);
@@ -113,93 +133,95 @@ export const Editor = ({ initialData }: EditorProps) => {
       <Navbar
         id={initialData.id}
         editor={editor}
-        activeTool={activeTool}
-        onChangeActiveTool={onChangeActiveTool}
+        canvasMode={canvasMode}
+        onSelectMode={exitDrawMode}
       />
       <div className="absolute h-[calc(100%-68px)] w-full top-[68px] flex">
         <Sidebar
-          activeTool={activeTool}
-          onChangeActiveTool={onChangeActiveTool}
+          activePanel={activePanel}
+          canvasMode={canvasMode}
+          onTogglePanel={togglePanel}
+          onToggleDrawMode={toggleDrawMode}
         />
         <ShapeSidebar
           editor={editor}
-          activeTool={activeTool}
-          onChangeActiveTool={onChangeActiveTool}
+          isOpen={activePanel === "shapes"}
+          onClose={closePanel}
         />
         <FillColorSidebar
           editor={editor}
-          activeTool={activeTool}
-          onChangeActiveTool={onChangeActiveTool}
+          isOpen={activePanel === "fill"}
+          onClose={closePanel}
         />
         <StrokeColorSidebar
           editor={editor}
-          activeTool={activeTool}
-          onChangeActiveTool={onChangeActiveTool}
+          isOpen={activePanel === "stroke-color"}
+          onClose={closePanel}
         />
         <StrokeWidthSidebar
           editor={editor}
-          activeTool={activeTool}
-          onChangeActiveTool={onChangeActiveTool}
+          isOpen={activePanel === "stroke-width"}
+          onClose={closePanel}
         />
         <OpacitySidebar
           editor={editor}
-          activeTool={activeTool}
-          onChangeActiveTool={onChangeActiveTool}
+          isOpen={activePanel === "opacity"}
+          onClose={closePanel}
         />
         <TextSidebar
           editor={editor}
-          activeTool={activeTool}
-          onChangeActiveTool={onChangeActiveTool}
+          isOpen={activePanel === "text"}
+          onClose={closePanel}
         />
         <FontSidebar
           editor={editor}
-          activeTool={activeTool}
-          onChangeActiveTool={onChangeActiveTool}
+          isOpen={activePanel === "font"}
+          onClose={closePanel}
         />
         <ImageSidebar
           editor={editor}
-          activeTool={activeTool}
-          onChangeActiveTool={onChangeActiveTool}
+          isOpen={activePanel === "images"}
+          onClose={closePanel}
           projectId={initialData.id}
         />
         <TemplateSidebar
           editor={editor}
-          activeTool={activeTool}
-          onChangeActiveTool={onChangeActiveTool}
+          isOpen={activePanel === "templates"}
+          onClose={closePanel}
         />
         <FilterSidebar
           editor={editor}
-          activeTool={activeTool}
-          onChangeActiveTool={onChangeActiveTool}
+          isOpen={activePanel === "filter"}
+          onClose={closePanel}
         />
         <AiSidebar
           editor={editor}
-          activeTool={activeTool}
-          onChangeActiveTool={onChangeActiveTool}
+          isOpen={activePanel === "ai"}
+          onClose={closePanel}
         />
         <RemoveBgSidebar
           editor={editor}
-          activeTool={activeTool}
-          onChangeActiveTool={onChangeActiveTool}
+          isOpen={activePanel === "remove-bg"}
+          onClose={closePanel}
           projectId={initialData.id}
         />
         <DrawSidebar
           editor={editor}
-          activeTool={activeTool}
-          onChangeActiveTool={onChangeActiveTool}
+          isOpen={canvasMode === "draw"}
+          onClose={exitDrawMode}
         />
         <SettingsSidebar
           editor={editor}
-          activeTool={activeTool}
-          onChangeActiveTool={onChangeActiveTool}
+          isOpen={activePanel === "settings"}
+          onClose={closePanel}
         />
         <main className="bg-muted flex-1 overflow-auto relative flex flex-col">
           <ResizablePanelGroup direction="vertical" className="flex-1">
             <ResizablePanel defaultSize={50} minSize={0}>
               <Toolbar
                 editor={editor}
-                activeTool={activeTool}
-                onChangeActiveTool={onChangeActiveTool}
+                activePanel={activePanel}
+                onTogglePanel={togglePanel}
                 key={JSON.stringify(editor?.canvas.getActiveObject())}
               />
               <div className="flex-1 h-[calc(90%)] bg-muted" ref={containerRef}>

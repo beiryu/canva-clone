@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { ActiveTool, Editor } from "@/features/editor/types";
+import { Editor } from "@/features/editor/types";
 import { ToolSidebarClose } from "@/features/editor/components/tool-sidebar-close";
 import { ToolSidebarHeader } from "@/features/editor/components/tool-sidebar-header";
 
@@ -10,14 +10,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface OpacitySidebarProps {
   editor: Editor | undefined;
-  activeTool: ActiveTool;
-  onChangeActiveTool: (tool: ActiveTool) => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export const OpacitySidebar = ({
   editor,
-  activeTool,
-  onChangeActiveTool,
+  isOpen,
+  onClose,
 }: OpacitySidebarProps) => {
   const initialValue = editor?.getActiveOpacity() || 1;
   const selectedObject = useMemo(
@@ -33,10 +33,6 @@ export const OpacitySidebar = ({
     }
   }, [selectedObject]);
 
-  const onClose = () => {
-    onChangeActiveTool("select");
-  };
-
   const onChange = (value: number) => {
     editor?.changeOpacity(value);
     setOpacity(value);
@@ -46,7 +42,7 @@ export const OpacitySidebar = ({
     <aside
       className={cn(
         "bg-black relative border-r z-[40] w-[360px] h-full flex flex-col",
-        activeTool === "opacity" ? "visible" : "hidden",
+        isOpen ? "visible" : "hidden",
       )}
     >
       <ToolSidebarHeader

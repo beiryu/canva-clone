@@ -24,7 +24,8 @@ const nextConfig = {
       },
       {
         protocol: "https",
-        hostname: "sdlzmdjhuxkbqdgcewej.supabase.co",
+        hostname: "*.supabase.co",
+        pathname: "/storage/v1/object/**",
       },
     ],
     dangerouslyAllowSVG: true,

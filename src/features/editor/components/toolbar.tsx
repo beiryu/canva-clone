@@ -19,7 +19,7 @@ import {
 import { isTextType } from "@/features/editor/utils";
 import { FontSizeInput } from "@/features/editor/components/font-size-input";
 import {
-  ActiveTool,
+  ActivePanel,
   Editor,
   FONT_SIZE,
   FONT_WEIGHT,
@@ -31,14 +31,14 @@ import { Button } from "@/components/ui/button";
 
 interface ToolbarProps {
   editor: Editor | undefined;
-  activeTool: ActiveTool;
-  onChangeActiveTool: (tool: ActiveTool) => void;
+  activePanel: ActivePanel | null;
+  onTogglePanel: (panel: ActivePanel) => void;
 }
 
 export const Toolbar = ({
   editor,
-  activeTool,
-  onChangeActiveTool,
+  activePanel,
+  onTogglePanel,
 }: ToolbarProps) => {
   const initialFillColor = editor?.getActiveFillColor();
   const initialStrokeColor = editor?.getActiveStrokeColor();
@@ -161,10 +161,10 @@ export const Toolbar = ({
         <div className="flex items-center h-full justify-center">
           <Hint label="Color" side="bottom" sideOffset={5}>
             <Button
-              onClick={() => onChangeActiveTool("fill")}
+              onClick={() => onTogglePanel("fill")}
               size="icon"
               variant="ghost"
-              className={cn(activeTool === "fill" && "bg-muted")}
+              className={cn(activePanel === "fill" && "bg-muted")}
             >
               <div
                 className="rounded-sm size-4 border"
@@ -178,10 +178,10 @@ export const Toolbar = ({
         <div className="flex items-center h-full justify-center">
           <Hint label="Stroke color" side="bottom" sideOffset={5}>
             <Button
-              onClick={() => onChangeActiveTool("stroke-color")}
+              onClick={() => onTogglePanel("stroke-color")}
               size="icon"
               variant="ghost"
-              className={cn(activeTool === "stroke-color" && "bg-muted")}
+              className={cn(activePanel === "stroke-color" && "bg-muted")}
             >
               <div
                 className="rounded-sm size-4 border-2 bg-muted"
@@ -195,10 +195,10 @@ export const Toolbar = ({
         <div className="flex items-center h-full justify-center">
           <Hint label="Stroke width" side="bottom" sideOffset={5}>
             <Button
-              onClick={() => onChangeActiveTool("stroke-width")}
+              onClick={() => onTogglePanel("stroke-width")}
               size="icon"
               variant="ghost"
-              className={cn(activeTool === "stroke-width" && "bg-muted")}
+              className={cn(activePanel === "stroke-width" && "bg-muted")}
             >
               <BsBorderWidth className="size-4" />
             </Button>
@@ -209,12 +209,12 @@ export const Toolbar = ({
         <div className="flex items-center h-full justify-center">
           <Hint label="Font" side="bottom" sideOffset={5}>
             <Button
-              onClick={() => onChangeActiveTool("font")}
+              onClick={() => onTogglePanel("font")}
               size="icon"
               variant="ghost"
               className={cn(
                 "w-auto px-2 text-sm",
-                activeTool === "font" && "bg-muted",
+                activePanel === "font" && "bg-muted",
               )}
             >
               <div className="max-w-[100px] truncate">
@@ -335,10 +335,10 @@ export const Toolbar = ({
         <div className="flex items-center h-full justify-center">
           <Hint label="Filters" side="bottom" sideOffset={5}>
             <Button
-              onClick={() => onChangeActiveTool("filter")}
+              onClick={() => onTogglePanel("filter")}
               size="icon"
               variant="ghost"
-              className={cn(activeTool === "filter" && "bg-muted")}
+              className={cn(activePanel === "filter" && "bg-muted")}
             >
               <TbColorFilter className="size-4" />
             </Button>
@@ -349,10 +349,10 @@ export const Toolbar = ({
         <div className="flex items-center h-full justify-center">
           <Hint label="Remove background" side="bottom" sideOffset={5}>
             <Button
-              onClick={() => onChangeActiveTool("remove-bg")}
+              onClick={() => onTogglePanel("remove-bg")}
               size="icon"
               variant="ghost"
-              className={cn(activeTool === "remove-bg" && "bg-muted")}
+              className={cn(activePanel === "remove-bg" && "bg-muted")}
             >
               <SquareSplitHorizontal className="size-4" />
             </Button>
@@ -384,10 +384,10 @@ export const Toolbar = ({
       <div className="flex items-center h-full justify-center">
         <Hint label="Opacity" side="bottom" sideOffset={5}>
           <Button
-            onClick={() => onChangeActiveTool("opacity")}
+            onClick={() => onTogglePanel("opacity")}
             size="icon"
             variant="outline"
-            className={cn(activeTool === "opacity" && "bg-muted")}
+            className={cn(activePanel === "opacity" && "bg-muted")}
           >
             <RxTransparencyGrid className="size-4" />
           </Button>

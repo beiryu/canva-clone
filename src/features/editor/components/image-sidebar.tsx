@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AlertTriangle, Loader, Search, Upload, X } from "lucide-react";
 import { useRef, useState } from "react";
 
-import { ActiveTool, Editor } from "@/features/editor/types";
+import { Editor } from "@/features/editor/types";
 import { ToolSidebarClose } from "@/features/editor/components/tool-sidebar-close";
 import { ToolSidebarHeader } from "@/features/editor/components/tool-sidebar-header";
 
@@ -19,15 +19,15 @@ import { getImageUrl } from "@/features/images/utils";
 import Image from "next/image";
 interface ImageSidebarProps {
   editor: Editor | undefined;
-  activeTool: ActiveTool;
-  onChangeActiveTool: (tool: ActiveTool) => void;
+  isOpen: boolean;
+  onClose: () => void;
   projectId: string;
 }
 
 export const ImageSidebar = ({
   editor,
-  activeTool,
-  onChangeActiveTool,
+  isOpen,
+  onClose,
   projectId,
 }: ImageSidebarProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -47,9 +47,9 @@ export const ImageSidebar = ({
 
   const { mutate: uploadImage, isPending: isUploading } = useUploadImage();
 
-  const onClose = () => {
+  const handleClose = () => {
     setSearch("");
-    onChangeActiveTool("select");
+    onClose();
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,7 +79,7 @@ export const ImageSidebar = ({
     <aside
       className={cn(
         "bg-black relative border-r z-[40] w-[360px] h-full flex flex-col",
-        activeTool === "images" ? "visible" : "hidden",
+        isOpen ? "visible" : "hidden",
       )}
     >
       <ToolSidebarHeader
@@ -238,7 +238,7 @@ export const ImageSidebar = ({
           </TabsContent>
         </Tabs>
       </ScrollArea>
-      <ToolSidebarClose onClick={onClose} />
+      <ToolSidebarClose onClick={handleClose} />
     </aside>
   );
 };

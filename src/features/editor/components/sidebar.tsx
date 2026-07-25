@@ -10,59 +10,66 @@ import {
   Type,
 } from "lucide-react";
 
-import { ActiveTool } from "@/features/editor/types";
+import { ActivePanel, CanvasMode } from "@/features/editor/types";
 import { SidebarItem } from "@/features/editor/components/sidebar-item";
 
 interface SidebarProps {
-  activeTool: ActiveTool;
-  onChangeActiveTool: (tool: ActiveTool) => void;
+  activePanel: ActivePanel | null;
+  canvasMode: CanvasMode;
+  onTogglePanel: (panel: ActivePanel) => void;
+  onToggleDrawMode: () => void;
 }
 
-export const Sidebar = ({ activeTool, onChangeActiveTool }: SidebarProps) => {
+export const Sidebar = ({
+  activePanel,
+  canvasMode,
+  onTogglePanel,
+  onToggleDrawMode,
+}: SidebarProps) => {
   return (
     <aside className="bg-black flex flex-col w-[100px] h-full border-r overflow-y-auto">
       <ul className="flex flex-col">
         <SidebarItem
           icon={Pencil}
           label="Draw"
-          isActive={activeTool === "draw"}
-          onClick={() => onChangeActiveTool("draw")}
+          isActive={canvasMode === "draw"}
+          onClick={onToggleDrawMode}
         />
         {/* <SidebarItem
           icon={LayoutTemplate}
           label="Design"
-          isActive={activeTool === "templates"}
-          onClick={() => onChangeActiveTool("templates")}
+          isActive={activePanel === "templates"}
+          onClick={() => onTogglePanel("templates")}
         /> */}
         <SidebarItem
           icon={ImageIcon}
           label="Image"
-          isActive={activeTool === "images"}
-          onClick={() => onChangeActiveTool("images")}
+          isActive={activePanel === "images"}
+          onClick={() => onTogglePanel("images")}
         />
         <SidebarItem
           icon={Type}
           label="Text"
-          isActive={activeTool === "text"}
-          onClick={() => onChangeActiveTool("text")}
+          isActive={activePanel === "text"}
+          onClick={() => onTogglePanel("text")}
         />
         <SidebarItem
           icon={Shapes}
           label="Shapes"
-          isActive={activeTool === "shapes"}
-          onClick={() => onChangeActiveTool("shapes")}
+          isActive={activePanel === "shapes"}
+          onClick={() => onTogglePanel("shapes")}
         />
         {/* <SidebarItem
           icon={Sparkles}
           label="AI"
-          isActive={activeTool === "ai"}
-          onClick={() => onChangeActiveTool("ai")}
+          isActive={activePanel === "ai"}
+          onClick={() => onTogglePanel("ai")}
         /> */}
         <SidebarItem
           icon={Settings}
           label="Settings"
-          isActive={activeTool === "settings"}
-          onClick={() => onChangeActiveTool("settings")}
+          isActive={activePanel === "settings"}
+          onClick={() => onTogglePanel("settings")}
         />
       </ul>
     </aside>

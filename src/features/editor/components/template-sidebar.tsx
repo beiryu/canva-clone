@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { AlertTriangle, Loader } from "lucide-react";
 
-import { ActiveTool, Editor } from "@/features/editor/types";
+import { Editor } from "@/features/editor/types";
 import { ToolSidebarClose } from "@/features/editor/components/tool-sidebar-close";
 import { ToolSidebarHeader } from "@/features/editor/components/tool-sidebar-header";
 
@@ -16,14 +16,14 @@ import { useConfirm } from "@/hooks/use-confirm";
 
 interface TemplateSidebarProps {
   editor: Editor | undefined;
-  activeTool: ActiveTool;
-  onChangeActiveTool: (tool: ActiveTool) => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export const TemplateSidebar = ({
   editor,
-  activeTool,
-  onChangeActiveTool,
+  isOpen,
+  onClose,
 }: TemplateSidebarProps) => {
   const [ConfirmDialog, confirm] = useConfirm(
     "Are you sure?",
@@ -34,10 +34,6 @@ export const TemplateSidebar = ({
     limit: "20",
     page: "1",
   });
-
-  const onClose = () => {
-    onChangeActiveTool("select");
-  };
 
   const onClick = async (template: ResponseType["data"][0]) => {
     const ok = await confirm();
@@ -51,7 +47,7 @@ export const TemplateSidebar = ({
     <aside
       className={cn(
         "bg-black relative border-r z-[40] w-[360px] h-full flex flex-col",
-        activeTool === "templates" ? "visible" : "hidden",
+        isOpen ? "visible" : "hidden",
       )}
     >
       <ConfirmDialog />

@@ -1,5 +1,4 @@
 import {
-  ActiveTool,
   Editor,
   STROKE_DASH_ARRAY,
   STROKE_WIDTH,
@@ -15,21 +14,17 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface StrokeWidthSidebarProps {
   editor: Editor | undefined;
-  activeTool: ActiveTool;
-  onChangeActiveTool: (tool: ActiveTool) => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export const StrokeWidthSidebar = ({
   editor,
-  activeTool,
-  onChangeActiveTool,
+  isOpen,
+  onClose,
 }: StrokeWidthSidebarProps) => {
   const widthValue = editor?.getActiveStrokeWidth() || STROKE_WIDTH;
   const typeValue = editor?.getActiveStrokeDashArray() || STROKE_DASH_ARRAY;
-
-  const onClose = () => {
-    onChangeActiveTool("select");
-  };
 
   const onChangeStrokeWidth = (value: number) => {
     editor?.changeStrokeWidth(value);
@@ -43,7 +38,7 @@ export const StrokeWidthSidebar = ({
     <aside
       className={cn(
         "bg-black relative border-r z-[40] w-[360px] h-full flex flex-col",
-        activeTool === "stroke-width" ? "visible" : "hidden",
+        isOpen ? "visible" : "hidden",
       )}
     >
       <ToolSidebarHeader

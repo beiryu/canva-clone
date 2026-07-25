@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { ActiveTool, Editor } from "@/features/editor/types";
+import { Editor } from "@/features/editor/types";
 import { ToolSidebarClose } from "@/features/editor/components/tool-sidebar-close";
 import { ToolSidebarHeader } from "@/features/editor/components/tool-sidebar-header";
 import { ColorPicker } from "@/features/editor/components/color-picker";
@@ -13,14 +13,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface SettingsSidebarProps {
   editor: Editor | undefined;
-  activeTool: ActiveTool;
-  onChangeActiveTool: (tool: ActiveTool) => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export const SettingsSidebar = ({
   editor,
-  activeTool,
-  onChangeActiveTool,
+  isOpen,
+  onClose,
 }: SettingsSidebarProps) => {
   const workspace = editor?.getWorkspace();
 
@@ -57,15 +57,11 @@ export const SettingsSidebar = ({
     });
   };
 
-  const onClose = () => {
-    onChangeActiveTool("select");
-  };
-
   return (
     <aside
       className={cn(
         "bg-black relative border-r z-[40] w-[360px] h-full flex flex-col",
-        activeTool === "settings" ? "visible" : "hidden",
+        isOpen ? "visible" : "hidden",
       )}
     >
       <ToolSidebarHeader
