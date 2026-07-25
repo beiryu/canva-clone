@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { Crown } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -11,7 +10,6 @@ interface TemplateCardProps {
   description: string;
   width: number;
   height: number;
-  isPro: boolean | null;
 }
 
 export const TemplateCard = ({
@@ -22,7 +20,6 @@ export const TemplateCard = ({
   description,
   height,
   width,
-  isPro,
 }: TemplateCardProps) => {
   return (
     <button
@@ -43,11 +40,6 @@ export const TemplateCard = ({
           alt={title}
           className=" object-cover transition transform group-hover:scale-105"
         />
-        {isPro && (
-          <div className="absolute top-2 right-2 h-10 w-10 flex items-center justify-center bg-black/50 rounded-full -z[10]">
-            <Crown className="size-5 fill-yellow-500 text-yellow-500" />
-          </div>
-        )}
         <div className="opacity-0 group-hover:opacity-100 transition absolute inset-0 bg-black/50 flex items-center justify-center rounded-xl backdrop-filter backdrop-blur-sm">
           <p className="text-white font-medium">Open in editor</p>
         </div>

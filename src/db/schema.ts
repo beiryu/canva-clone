@@ -9,7 +9,6 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
-import type { AdapterAccountType } from "next-auth/adapters";
 
 export const users = pgTable("user", {
   id: text("id")
@@ -25,73 +24,6 @@ export const users = pgTable("user", {
 export const usersRelations = relations(users, ({ many }) => ({
   projects: many(projects),
 }));
-
-export const accounts = pgTable(
-  "account",
-  {
-    userId: text("userId")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    type: text("type").$type<AdapterAccountType>().notNull(),
-    provider: text("provider").notNull(),
-    providerAccountId: text("providerAccountId").notNull(),
-    refresh_token: text("refresh_token"),
-    access_token: text("access_token"),
-    expires_at: integer("expires_at"),
-    token_type: text("token_type"),
-    scope: text("scope"),
-    id_token: text("id_token"),
-    session_state: text("session_state"),
-  },
-  (account) => ({
-    compoundKey: primaryKey({
-      columns: [account.provider, account.providerAccountId],
-    }),
-  }),
-);
-
-export const sessions = pgTable("session", {
-  sessionToken: text("sessionToken").primaryKey(),
-  userId: text("userId")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  expires: timestamp("expires", { mode: "date" }).notNull(),
-});
-
-export const verificationTokens = pgTable(
-  "verificationToken",
-  {
-    identifier: text("identifier").notNull(),
-    token: text("token").notNull(),
-    expires: timestamp("expires", { mode: "date" }).notNull(),
-  },
-  (verificationToken) => ({
-    compositePk: primaryKey({
-      columns: [verificationToken.identifier, verificationToken.token],
-    }),
-  }),
-);
-
-export const authenticators = pgTable(
-  "authenticator",
-  {
-    credentialID: text("credentialID").notNull().unique(),
-    userId: text("userId")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    providerAccountId: text("providerAccountId").notNull(),
-    credentialPublicKey: text("credentialPublicKey").notNull(),
-    counter: integer("counter").notNull(),
-    credentialDeviceType: text("credentialDeviceType").notNull(),
-    credentialBackedUp: boolean("credentialBackedUp").notNull(),
-    transports: text("transports"),
-  },
-  (authenticator) => ({
-    compositePK: primaryKey({
-      columns: [authenticator.userId, authenticator.credentialID],
-    }),
-  }),
-);
 
 export const projects = pgTable("project", {
   id: text("id")
@@ -121,25 +53,6 @@ export const projectsRelations = relations(projects, ({ one }) => ({
 }));
 
 export const projectsInsertSchema = createInsertSchema(projects);
-
-export const subscriptions = pgTable("subscription", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  userId: text("userId")
-    .notNull()
-    .references(() => users.id, {
-      onDelete: "cascade",
-    }),
-  customerId: text("customerId").notNull(),
-  priceId: text("priceId").notNull(),
-  status: text("status").notNull(),
-  productId: text("productId").notNull(),
-  checkoutId: text("checkoutId"),
-  type: text("type").notNull(),
-  createdAt: timestamp("createdAt", { mode: "date" }).notNull(),
-  updatedAt: timestamp("updatedAt", { mode: "date" }).notNull(),
-});
 
 export const generatedImages = pgTable("generated_image", {
   id: text("id")
@@ -204,55 +117,3 @@ export const uploadedImagesRelations = relations(uploadedImages, ({ one }) => ({
 }));
 
 export const uploadedImagesInsertSchema = createInsertSchema(uploadedImages);
-
-export const userCredits = pgTable("user_credits", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  userId: text("userId")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  balance: integer("balance").notNull().default(0),
-  lifetimeEarned: integer("lifetimeEarned").notNull().default(0),
-  lifetimeSpent: integer("lifetimeSpent").notNull().default(0),
-  createdAt: timestamp("createdAt", { mode: "date" }).notNull(),
-  updatedAt: timestamp("updatedAt", { mode: "date" }).notNull(),
-});
-
-export const userCreditsRelations = relations(userCredits, ({ one }) => ({
-  user: one(users, {
-    fields: [userCredits.userId],
-    references: [users.id],
-  }),
-}));
-
-export const creditTransactions = pgTable("credit_transactions", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  userId: text("userId")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  amount: integer("amount").notNull(),
-  balanceAfter: integer("balanceAfter").notNull(),
-  description: text("description"),
-  metadata: jsonb("metadata"),
-  referenceId: text("referenceId"),
-  referenceType: text("referenceType"),
-  createdAt: timestamp("createdAt", { mode: "date" }).notNull(),
-  updatedAt: timestamp("updatedAt", { mode: "date" }).notNull(),
-});
-
-export const creditTransactionsRelations = relations(
-  creditTransactions,
-  ({ one }) => ({
-    user: one(users, {
-      fields: [creditTransactions.userId],
-      references: [users.id],
-    }),
-  }),
-);
-
-export const userCreditsInsertSchema = createInsertSchema(userCredits);
-export const creditTransactionsInsertSchema =
-  createInsertSchema(creditTransactions);

@@ -3,15 +3,12 @@
 import Link from "next/link";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { FaGithub } from "react-icons/fa";
-import { FcGoogle } from "react-icons/fc";
 import { Loader2, TriangleAlert } from "lucide-react";
 
 import { useSignUp } from "@/features/auth/hooks/use-sign-up";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import {
   Card,
   CardTitle,
@@ -22,22 +19,12 @@ import {
 
 export const SignUpCard = () => {
   const [loading, setLoading] = useState(false);
-  const [loadingGithub, setLoadingGithub] = useState(false);
-  const [loadingGoogle, setLoadingGoogle] = useState(false);
 
   const mutation = useSignUp();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  const onProviderSignUp = (provider: "github" | "google") => {
-    setLoading(true);
-    setLoadingGithub(provider === "github");
-    setLoadingGoogle(provider === "google");
-
-    signIn(provider, { callbackUrl: "/" });
-  };
 
   const onCredentialSignUp = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -66,7 +53,7 @@ export const SignUpCard = () => {
       <CardHeader className="px-0 pt-0">
         <CardTitle>Create an account</CardTitle>
         <CardDescription>
-          Use your email or another service to continue
+          Use your email and password to continue
         </CardDescription>
       </CardHeader>
       {!!mutation.error && (
@@ -116,37 +103,6 @@ export const SignUpCard = () => {
             )}
           </Button>
         </form>
-        <Separator />
-        <div className="flex flex-col gap-y-2.5">
-          <Button
-            disabled={mutation.isPending || loading}
-            onClick={() => onProviderSignUp("google")}
-            variant="outline"
-            size="lg"
-            className="w-full relative"
-          >
-            {loadingGoogle ? (
-              <Loader2 className="mr-2 size-5 top-2.5 left-2.5 absolute animate-spin" />
-            ) : (
-              <FcGoogle className="mr-2 size-5 top-2.5 left-2.5 absolute" />
-            )}
-            Continue with Google
-          </Button>
-          <Button
-            disabled={mutation.isPending || loading}
-            onClick={() => onProviderSignUp("github")}
-            variant="outline"
-            size="lg"
-            className="w-full relative"
-          >
-            {loadingGithub ? (
-              <Loader2 className="mr-2 size-5 top-2.5 left-2.5 absolute animate-spin" />
-            ) : (
-              <FaGithub className="mr-2 size-5 top-2.5 left-2.5 absolute" />
-            )}
-            Continue with Github
-          </Button>
-        </div>
         <p className="text-xs text-muted-foreground">
           Already have an account?{" "}
           <Link href="/sign-in" onClick={() => setLoading(true)}>

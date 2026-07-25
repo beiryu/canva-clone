@@ -15,6 +15,13 @@
       "when": 1747398662158,
       "tag": "0001_fixed_thena",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784952046149,
+      "tag": "0002_overjoyed_mister_fear",
+      "breakpoints": true
     }
   ]
 }

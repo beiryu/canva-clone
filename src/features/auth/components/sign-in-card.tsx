@@ -3,14 +3,11 @@
 import Link from "next/link";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { FaGithub } from "react-icons/fa";
-import { FcGoogle } from "react-icons/fc";
 import { Loader2, TriangleAlert } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import {
   Card,
   CardTitle,
@@ -21,8 +18,6 @@ import {
 
 export const SignInCard = () => {
   const [loading, setLoading] = useState(false);
-  const [loadingGithub, setLoadingGithub] = useState(false);
-  const [loadingGoogle, setLoadingGoogle] = useState(false);
   const [loadingLogin, setLoadingLogin] = useState(false);
 
   const [email, setEmail] = useState("");
@@ -43,39 +38,18 @@ export const SignInCard = () => {
     });
   };
 
-  const onProviderSignIn = (provider: "github" | "google") => {
-    setLoading(true);
-    setLoadingGithub(provider === "github");
-    setLoadingGoogle(provider === "google");
-
-    signIn(provider, { callbackUrl: "/" });
-  };
-
-  const getErrorMessage = (error: string) => {
-    switch (error) {
-      case "OAuthSignin":
-      case "OAuthCallback":
-      case "OAuthCreateAccount":
-        return "Error connecting to provider. Please try again.";
-      case "OAuthAccountNotLinked":
-        return "Email already used with different provider.";
-      default:
-        return "Invalid email or password";
-    }
-  };
-
   return (
     <Card className="w-full h-full p-8">
       <CardHeader className="px-0 pt-0">
         <CardTitle>Login to continue</CardTitle>
         <CardDescription>
-          Use your email or another service to continue
+          Use your email and password to continue
         </CardDescription>
       </CardHeader>
       {!!error && (
         <div className="bg-destructive/15 p-3 rounded-md flex items-center gap-x-2 text-sm text-destructive mb-6">
           <TriangleAlert className="size-4" />
-          <p>{getErrorMessage(error)}</p>
+          <p>Invalid email or password</p>
         </div>
       )}
       <CardContent className="space-y-5 px-0 pb-0">
@@ -85,7 +59,7 @@ export const SignInCard = () => {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Email"
             type="email"
-            disabled={loading || loadingLogin}
+            disabled={loading}
             required
           />
           <Input
@@ -93,7 +67,7 @@ export const SignInCard = () => {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
             type="password"
-            disabled={loading || loadingLogin}
+            disabled={loading}
             required
           />
           <Button className="w-full" type="submit" size="lg" disabled={loading}>
@@ -104,37 +78,6 @@ export const SignInCard = () => {
             )}
           </Button>
         </form>
-        <Separator />
-        <div className="flex flex-col gap-y-2.5">
-          <Button
-            onClick={() => onProviderSignIn("google")}
-            size="lg"
-            variant="outline"
-            className="w-full relative"
-            disabled={loading}
-          >
-            {loadingGoogle ? (
-              <Loader2 className="mr-2 size-5 top-2.5 left-2.5 absolute animate-spin" />
-            ) : (
-              <FcGoogle className="mr-2 size-5 top-2.5 left-2.5 absolute" />
-            )}
-            Continue with Google
-          </Button>
-          <Button
-            onClick={() => onProviderSignIn("github")}
-            size="lg"
-            variant="outline"
-            disabled={loading}
-            className="w-full relative"
-          >
-            {loadingGithub ? (
-              <Loader2 className="mr-2 size-5 top-2.5 left-2.5 absolute animate-spin" />
-            ) : (
-              <FaGithub className="mr-2 size-5 top-2.5 left-2.5 absolute" />
-            )}
-            Continue with Github
-          </Button>
-        </div>
         <p className="text-xs text-muted-foreground">
           Don&apos;t have an account?{" "}
           <Link href="/sign-up" onClick={() => setLoading(true)}>

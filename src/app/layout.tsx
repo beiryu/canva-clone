@@ -2,10 +2,7 @@ import type { Metadata } from "next";
 import { Space_Grotesk } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 
-import { SubscriptionAlert } from "@/features/subscriptions/components/subscription-alert";
-
 import { auth } from "@/auth";
-import { Modals } from "@/components/modals";
 import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "@/components/providers";
 
@@ -31,8 +28,6 @@ export default async function RootLayout({
         <body className={font.className}>
           <Providers>
             <Toaster />
-            <Modals />
-            <SubscriptionAlert />
             {children}
           </Providers>
         </body>

@@ -1,11 +1,8 @@
-import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import type { NextAuthConfig } from "next-auth";
 import { JWT } from "next-auth/jwt";
 import Credentials from "next-auth/providers/credentials";
-import GitHub from "next-auth/providers/github";
-import Google from "next-auth/providers/google";
 import { z } from "zod";
 
 import { db } from "@/db/drizzle";
@@ -29,12 +26,11 @@ declare module "@auth/core/jwt" {
 }
 
 export default {
-  adapter: DrizzleAdapter(db),
   providers: [
     Credentials({
       credentials: {
         email: { label: "Email", type: "email" },
-        pasword: { label: "Password", type: "password" },
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         const validatedFields = CredentialsSchema.safeParse(credentials);
@@ -62,11 +58,14 @@ export default {
           return null;
         }
 
-        return user;
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          image: user.image,
+        };
       },
     }),
-    GitHub,
-    Google,
   ],
   pages: {
     signIn: "/sign-in",
