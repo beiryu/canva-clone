@@ -13,10 +13,19 @@ type RequestType = InferRequestType<
   (typeof client.api.ai)["agent-remove-bg"]["$post"]
 >["json"];
 
+// Background removal takes 5-30s, so the request gets a loading toast that the
+// success/error toast then replaces in place via its id.
+type MutationContext = { toastId: string | number };
+
 export const useAgentRemoveBg = () => {
   const queryClient = useQueryClient();
 
-  const mutation = useMutation<ResponseType, Error, RequestType>({
+  const mutation = useMutation<
+    ResponseType,
+    Error,
+    RequestType,
+    MutationContext
+  >({
     mutationFn: async (json) => {
       const response = await client.api.ai["agent-remove-bg"].$post({ json });
 
@@ -26,7 +35,10 @@ export const useAgentRemoveBg = () => {
 
       return await response.json();
     },
-    onSuccess: ({ data: { projectId } }) => {
+    onMutate: () => ({
+      toastId: toast.loading("Removing background..."),
+    }),
+    onSuccess: ({ data: { projectId } }, _variables, context) => {
       // Invalidate the uploaded images query to refresh the list
       queryClient.invalidateQueries({ queryKey: ["images", "uploaded"] });
 
@@ -37,11 +49,13 @@ export const useAgentRemoveBg = () => {
         });
       }
 
-      toast.success("Background removed successfully");
+      toast.success("Background removed successfully", { id: context?.toastId });
     },
-    onError: (error) => {
+    onError: (error, _variables, context) => {
       console.error("Error removing background from image:", error);
-      toast.error("Failed to remove background from image");
+      toast.error("Failed to remove background from image", {
+        id: context?.toastId,
+      });
     },
   });
 

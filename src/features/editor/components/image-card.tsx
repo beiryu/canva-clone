@@ -7,6 +7,7 @@ import { Edit, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { visualStyles } from "../store/use-visual-style";
+import { getModelDisplayName } from "@/features/agents/utils";
 import { getImageUrl } from "@/features/images/utils";
 import { useImageDownload } from "@/features/images/hooks/use-image-download";
 import { useImageLoading } from "@/features/editor/hooks/use-image-loading";
@@ -191,10 +192,12 @@ export function ImageCard({ image }: ImageCardProps) {
             )}
 
             {/* Model */}
-            {image.model && (
+            {getModelDisplayName(image.model) && (
               <div>
                 <p className="text-xs text-gray-500 mb-1">Model</p>
-                <p className="text-xs text-gray-400">{image.model}</p>
+                <p className="text-xs text-gray-400">
+                  {getModelDisplayName(image.model)}
+                </p>
               </div>
             )}
 

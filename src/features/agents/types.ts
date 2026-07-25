@@ -1,36 +1,29 @@
+import {
+  BACKGROUND_REMOVER_MODELS,
+  IMAGE_ASPECT_RATIOS,
+  IMAGE_GENERATION_MODELS,
+  IMAGE_QUALITIES,
+  SKETCH_STRICTNESS,
+  TEXT_GENERATION_MODELS,
+} from "./model-ids";
 import { AnyModel } from "./models";
 
-export type ImageGenerationModel =
-  | "o/gpt-image-1"
-  | "flux-schnell"
-  | "r/gpt-image-1"
-  | "flux-1.1-pro-ultra";
+export type ImageGenerationModel = (typeof IMAGE_GENERATION_MODELS)[number];
 
-export type TextGenerationModel = "gpt-4.1-mini";
+export type TextGenerationModel = (typeof TEXT_GENERATION_MODELS)[number];
 
-export type BackgroundRemoverModel = "labs/background-remover";
+export type BackgroundRemoverModel = (typeof BACKGROUND_REMOVER_MODELS)[number];
 
 export type ModelCapability =
   | "image-generation"
   | "text-generation"
   | "background-remover";
 
-export type ImageAspectRatio =
-  | "1:1"
-  | "16:9"
-  | "9:16"
-  | "21:9"
-  | "9:21"
-  | "3:2"
-  | "2:3"
-  | "4:5"
-  | "5:4"
-  | "3:4"
-  | "4:3";
+export type ImageAspectRatio = (typeof IMAGE_ASPECT_RATIOS)[number];
 
-export type ImageQuality = "low" | "medium" | "high";
+export type ImageQuality = (typeof IMAGE_QUALITIES)[number];
 
-export type SketchGuidanceStrictness = "loose" | "moderate" | "strict";
+export type SketchGuidanceStrictness = (typeof SKETCH_STRICTNESS)[number];
 
 // Base options interface for all generation types
 export interface BaseGenerationOptions {
@@ -46,11 +39,6 @@ export interface ImageGenerationOptions extends BaseGenerationOptions {
     quality?: ImageQuality;
     strictness?: SketchGuidanceStrictness;
   };
-}
-
-export interface TextGenerationOptions extends BaseGenerationOptions {
-  temperature?: number;
-  maxTokens?: number;
 }
 
 export interface EnhancePromptOptions extends BaseGenerationOptions {
@@ -95,15 +83,17 @@ export interface ImageGenerationHandler extends ModelHandler {
   generateImage: (
     options: ImageGenerationOptions,
   ) => Promise<ImageGenerationResult>;
-  editImage: (
+  /**
+   * Optional: no model implements this yet. flux-kontext-pro genuinely is an
+   * image-editing model, so this is the natural home for that feature — but a
+   * required method every handler stubs out with a throw is worse than none.
+   */
+  editImage?: (
     options: ImageGenerationOptions,
   ) => Promise<ImageGenerationResult>;
 }
 
 export interface TextGenerationHandler extends ModelHandler {
-  generateText: (
-    options: TextGenerationOptions,
-  ) => Promise<TextGenerationResult>;
   enhancePrompt: (
     options: EnhancePromptOptions,
   ) => Promise<TextGenerationResult>;

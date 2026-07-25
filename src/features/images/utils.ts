@@ -76,7 +76,7 @@ export async function convertToFile(
       return new File([blob], finalFileName, { type: contentType });
     }
 
-    // Case 3: Raw base64 string (like OpenAI's b64_json output)
+    // Case 3: Raw base64 string with no data-URL prefix
     case /^[A-Za-z0-9+/=]+$/.test(imageData.trim()): {
       try {
         const contentType = fileType;

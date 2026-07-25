@@ -7,12 +7,14 @@ import { db } from "@/db/drizzle";
 import { generatedImages, uploadedImages } from "@/db/schema";
 import { AgentManager } from "@/features/agents/managers";
 import {
-  ImageAspectRatio,
-  ImageGenerationModel,
-  ImageQuality,
-  SketchGuidanceStrictness,
-  TextGenerationModel,
-} from "@/features/agents/types";
+  DEFAULT_TEXT_MODEL,
+  IMAGE_ASPECT_RATIOS,
+  IMAGE_GENERATION_MODELS,
+  IMAGE_QUALITIES,
+  SKETCH_STRICTNESS,
+  TEXT_GENERATION_MODELS,
+} from "@/features/agents/model-ids";
+import { modelRegistry } from "@/features/agents/models";
 import {
   getSignedUrl,
   IMAGES_BUCKET_NAME,
@@ -20,6 +22,12 @@ import {
   uploadFileToSupabase,
 } from "@/features/images/core/supabase";
 import { convertToFile } from "@/features/images/utils";
+
+// Derived from the model-ids tuples rather than modelRegistry.keys(), which
+// widens to AnyModel[] (rejected by z.enum) and would also let the text and
+// background-remover models through the image route.
+const imageModelSchema = z.enum(IMAGE_GENERATION_MODELS);
+const textModelSchema = z.enum(TEXT_GENERATION_MODELS);
 
 const app = new Hono()
   .post(
@@ -84,14 +92,14 @@ const app = new Hono()
       "json",
       z.object({
         projectId: z.string(),
-        model: z.string(),
-        prompt: z.string(),
+        model: imageModelSchema,
+        prompt: z.string().min(1),
         style: z.string(),
         canvasImage: z.string().optional(),
         settings: z.object({
-          aspectRatio: z.string().optional(),
-          quality: z.string().optional(),
-          strictness: z.string().optional(),
+          aspectRatio: z.enum(IMAGE_ASPECT_RATIOS).optional(),
+          quality: z.enum(IMAGE_QUALITIES).optional(),
+          strictness: z.enum(SKETCH_STRICTNESS).optional(),
         }),
       }),
     ),
@@ -107,7 +115,16 @@ const app = new Hono()
         return c.json({ error: "Unauthorized" }, 401);
       }
 
-      if (canvasImage) {
+      // Correctness guard against a stale client: never upload or sign a canvas
+      // image for a model that cannot consume one. The client gates this too,
+      // which is what actually saves the bandwidth.
+      const supportsImageInput = Boolean(
+        modelRegistry.get(model)?.params.supportsImageInput,
+      );
+
+      if (canvasImage && !supportsImageInput) {
+        canvasImage = undefined;
+      } else if (canvasImage) {
         const canvasImageFile = await convertToFile(canvasImage, {
           filePrefix: "canvas-image",
         });
@@ -120,6 +137,8 @@ const app = new Hono()
           bucketName: TEMP_IMAGES_BUCKET_NAME,
         });
 
+        // Note: getSignedUrl takes MINUTES (it multiplies by 60), so this is a
+        // 15-minute expiry — long enough for a queued Replicate prediction.
         canvasImage = await getSignedUrl(
           canvasImageUrl.path,
           15,
@@ -132,15 +151,11 @@ const app = new Hono()
 
       try {
         const result = await agentManager.generateImage({
-          model: model as ImageGenerationModel,
+          model,
           prompt,
           style,
           canvasImage,
-          settings: {
-            aspectRatio: aspectRatio as ImageAspectRatio,
-            quality: quality as ImageQuality,
-            strictness: strictness as SketchGuidanceStrictness,
-          },
+          settings: { aspectRatio, quality, strictness },
         });
 
         // Upload the result to Supabase
@@ -184,18 +199,15 @@ const app = new Hono()
     verifyAuth(),
     zValidator(
       "json",
-      z
-        .object({
-          model: z.string(),
-          prompt: z.string(),
-        })
-        .default({
-          model: "gpt-4.1-mini",
-          prompt: "",
-        }),
+      z.object({
+        // Field-level default so the server owns the choice of text model and
+        // the client does not hard-code one.
+        model: textModelSchema.default(DEFAULT_TEXT_MODEL),
+        prompt: z.string().min(1),
+      }),
     ),
     async (c) => {
-      let { model, prompt } = c.req.valid("json");
+      const { model, prompt } = c.req.valid("json");
 
       const auth = c.get("authUser");
 
@@ -207,7 +219,7 @@ const app = new Hono()
 
       try {
         const result = await agentManager.enhancePrompt({
-          model: model as TextGenerationModel,
+          model,
           currentPrompt: prompt,
         });
 

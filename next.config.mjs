@@ -27,6 +27,11 @@ const nextConfig = {
         hostname: "*.supabase.co",
         pathname: "/storage/v1/object/**",
       },
+      {
+        // Google Images thumbnails (encrypted-tbn0..3.gstatic.com)
+        protocol: "https",
+        hostname: "*.gstatic.com",
+      },
     ],
     dangerouslyAllowSVG: true,
   },

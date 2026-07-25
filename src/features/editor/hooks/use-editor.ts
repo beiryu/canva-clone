@@ -18,12 +18,14 @@ import {
   FONT_WEIGHT,
   FONT_SIZE,
   JSON_KEYS,
+  CropRect,
 } from "@/features/editor/types";
 import { useHistory } from "@/features/editor/hooks/use-history";
 import {
   createFilter,
   downloadFile,
   isTextType,
+  sourceToScene,
   transformText,
 } from "@/features/editor/utils";
 import { useHotkeys } from "@/features/editor/hooks/use-hotkeys";
@@ -206,6 +208,65 @@ const buildEditor = ({
         }
       });
     },
+    // Takes the target object instead of reading getActiveObject(): background
+    // removal runs for 5-30s, so the selection may have moved on by then.
+    replaceImageSrc: (object: fabric.Image, value: string) => {
+      // The image may have been deleted while the request was in flight.
+      if (!canvas.getObjects().includes(object)) return;
+
+      // setSrc resets width/height to the new image's natural size but keeps
+      // scaleX/scaleY, so recompute the scale to keep the on-screen box.
+      const width = object.getScaledWidth();
+      const height = object.getScaledHeight();
+
+      object.setSrc(
+        value,
+        // @types/fabric types the callback as a bare `Function`.
+        (_img: fabric.Image, isError: boolean) => {
+          if (isError) return;
+
+          object.set({
+            scaleX: width / (object.width || 1),
+            scaleY: height / (object.height || 1),
+            // setSrc resets width/height but NOT cropX/cropY, which would leave
+            // a half-applied crop. The cutout has different bounds anyway, so
+            // drop the old window rather than trying to carry it over.
+            cropX: 0,
+            cropY: 0,
+          });
+          object.setCoords();
+          canvas.renderAll();
+          // setSrc fires no canvas event, so history/autosave needs a nudge.
+          save();
+        },
+        // Required for savePng/saveJpg — a tainted canvas can't be exported.
+        { crossOrigin: "anonymous" },
+      );
+    },
+    // Commits a crop window measured in source-bitmap pixels. Takes the target
+    // explicitly for the same reason as replaceImageSrc: crop mode is a
+    // long-lived interaction and the selection may have moved on.
+    applyCrop: (image: fabric.Image, rect: CropRect) => {
+      // Undo does clear() + loadFromJSON, so the object may be stale by now.
+      if (!canvas.getObjects().includes(image)) return;
+
+      // Capture where the window's top-left sits on screen BEFORE mutating:
+      // fabric's origin is left/top, so shrinking width moves only the right
+      // edge and the crop would otherwise appear anchored to the wrong corner.
+      const topLeft = sourceToScene(image, rect.x, rect.y);
+
+      image.set({
+        cropX: rect.x,
+        cropY: rect.y,
+        width: rect.width,
+        height: rect.height,
+      });
+      image.setPositionByOrigin(topLeft, "left", "top");
+      image.setCoords();
+      canvas.renderAll();
+      // A programmatic set() fires no object:modified, so nudge history/autosave.
+      save();
+    },
     addImage: (value: string) => {
       fabric.Image.fromURL(
         value,
@@ -377,6 +438,32 @@ const buildEditor = ({
         object.set({ opacity: value });
       });
       canvas.renderAll();
+    },
+    // Uses getActiveObject() rather than iterating getActiveObjects(): for a
+    // multi-selection that flips the arrangement as a unit (fabric bakes the
+    // selection's matrix into its children on deselect), whereas iterating
+    // would flip each object in place.
+    flipHorizontal: () => {
+      const object = canvas.getActiveObject();
+
+      if (!object) return;
+
+      object.set({ flipX: !object.flipX });
+      object.setCoords();
+      canvas.renderAll();
+      // A programmatic set() fires no "object:modified", so history needs a
+      // nudge or the flip is neither undoable nor persisted.
+      save();
+    },
+    flipVertical: () => {
+      const object = canvas.getActiveObject();
+
+      if (!object) return;
+
+      object.set({ flipY: !object.flipY });
+      object.setCoords();
+      canvas.renderAll();
+      save();
     },
     bringForward: () => {
       canvas.getActiveObjects().forEach((object) => {
@@ -614,6 +701,7 @@ export const useEditor = ({
   defaultWidth,
   clearSelectionCallback,
   saveCallback,
+  isCroppingRef,
 }: EditorHookProps) => {
   const initialState = useRef(defaultState);
   const initialWidth = useRef(defaultWidth);
@@ -659,6 +747,7 @@ export const useEditor = ({
     paste,
     save,
     canvas,
+    isCroppingRef,
   });
 
   useLoadState({

@@ -1,3 +1,4 @@
+import { IMAGE_ASPECT_RATIOS, IMAGE_QUALITIES } from "./model-ids";
 import {
   BackgroundRemoverModel,
   ImageGenerationModel,
@@ -12,8 +13,17 @@ export interface ModelConfig {
   description: string;
   capabilities: ModelCapability[];
   params: {
+    /**
+     * Omitted entirely when the model exposes no quality knob — the UI hides
+     * the Quality select when this is absent.
+     */
     quality?: string[];
     aspectRatio?: string[];
+    /**
+     * Model accepts a sketch / reference image. Drives whether the UI shows
+     * Sketch Guidance and whether the canvas is captured and uploaded at all.
+     */
+    supportsImageInput?: boolean;
 
     maxTokens?: number;
     contextSize?: number;
@@ -25,17 +35,22 @@ export type AnyModel =
   | TextGenerationModel
   | BackgroundRemoverModel;
 
+const ALL_ASPECT_RATIOS = [...IMAGE_ASPECT_RATIOS];
+
+// Registry order drives the order of the model dropdown, so the default
+// (flux-kontext-pro) comes first.
 const productionModels: [AnyModel, ModelConfig][] = [
   [
-    "r/gpt-image-1",
+    "flux-kontext-pro",
     {
       provider: "replicate",
-      name: "GPT Image",
-      description: "Faster speed, higher quality images",
+      name: "Flux Kontext Pro",
+      description: "Best for turning your canvas sketch into an image",
       capabilities: ["image-generation"],
+      // No quality param on this model.
       params: {
-        quality: ["low", "medium", "high"],
-        aspectRatio: ["1:1", "2:3", "3:2"],
+        aspectRatio: ALL_ASPECT_RATIOS,
+        supportsImageInput: true,
       },
     },
   ],
@@ -44,36 +59,38 @@ const productionModels: [AnyModel, ModelConfig][] = [
     {
       provider: "replicate",
       name: "Flux Pro Ultra",
-      description: "Standard speed, high quality images",
+      description: "Highest detail, looser sketch guidance",
       capabilities: ["image-generation"],
+      // No quality param on this model.
       params: {
-        quality: ["high"],
-        aspectRatio: [
-          "1:1",
-          "16:9",
-          "9:16",
-          "21:9",
-          "9:21",
-          "3:2",
-          "2:3",
-          "4:5",
-          "5:4",
-          "3:4",
-          "4:3",
-        ],
+        aspectRatio: ALL_ASPECT_RATIOS,
+        supportsImageInput: true,
       },
     },
   ],
   [
-    "gpt-4.1-mini",
+    "flux-schnell",
     {
-      provider: "openai",
-      name: "GPT-4",
-      description: "Advanced reasoning and text generation",
+      provider: "replicate",
+      name: "Flux Schnell",
+      description: "Fastest, prompt only — ignores your sketch",
+      capabilities: ["image-generation"],
+      params: {
+        quality: [...IMAGE_QUALITIES],
+        aspectRatio: ALL_ASPECT_RATIOS,
+        supportsImageInput: false,
+      },
+    },
+  ],
+  [
+    "llama-3-70b-instruct",
+    {
+      provider: "replicate",
+      name: "Llama 3 70B Instruct",
+      description: "Prompt enhancement",
       capabilities: ["text-generation"],
       params: {
-        maxTokens: 4096,
-        contextSize: 8192,
+        maxTokens: 500,
       },
     },
   ],
@@ -85,47 +102,6 @@ const productionModels: [AnyModel, ModelConfig][] = [
       description: "Remove the background from an image",
       capabilities: ["background-remover"],
       params: {},
-    },
-  ],
-];
-
-const localModels = [
-  [
-    "flux-schnell",
-    {
-      provider: "replicate",
-      name: "Flux Schnell",
-      description: "Standard speed, standard queue",
-      capabilities: ["image-generation"],
-      params: {
-        quality: ["low", "medium", "high"],
-        aspectRatio: [
-          "1:1",
-          "16:9",
-          "9:16",
-          "21:9",
-          "9:21",
-          "3:2",
-          "2:3",
-          "4:5",
-          "5:4",
-          "3:4",
-          "4:3",
-        ],
-      },
-    },
-  ],
-  [
-    "o/gpt-image-1",
-    {
-      provider: "openai",
-      name: "GPT Image",
-      description: "Faster speed, higher quality images",
-      capabilities: ["image-generation"],
-      params: {
-        quality: ["low", "medium", "high"],
-        aspectRatio: ["1:1", "2:3", "3:2"],
-      },
     },
   ],
 ];

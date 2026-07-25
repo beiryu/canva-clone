@@ -1,4 +1,5 @@
 import { fabric } from "fabric";
+import type { MutableRefObject } from "react";
 import { useEvent } from "react-use";
 
 interface UseHotkeysProps {
@@ -8,6 +9,7 @@ interface UseHotkeysProps {
   save: (skip?: boolean) => void;
   copy: () => void;
   paste: () => void;
+  isCroppingRef?: MutableRefObject<boolean>;
 }
 
 export const useHotkeys = ({
@@ -17,6 +19,7 @@ export const useHotkeys = ({
   save,
   copy,
   paste,
+  isCroppingRef,
 }: UseHotkeysProps) => {
   useEvent("keydown", (event) => {
     const isCtrlKey = event.ctrlKey || event.metaKey;
@@ -26,6 +29,11 @@ export const useHotkeys = ({
     );
 
     if (isInput) return;
+
+    // Crop mode owns the keyboard: Delete would remove the very image being
+    // cropped, and undo's clear() + loadFromJSON would leave the crop hook
+    // holding a stale object. Enter/Escape are handled in use-crop.
+    if (isCroppingRef?.current) return;
 
     // delete key
     if (event.keyCode === 46) {

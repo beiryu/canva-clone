@@ -1,4 +1,4 @@
-import { ModelConfig, modelRegistry } from "./models";
+import { AnyModel, ModelConfig, modelRegistry } from "./models";
 import { ModelCapability, SketchGuidanceStrictness } from "./types";
 
 export const getModelsByCapability = (
@@ -15,16 +15,21 @@ export const getModelsByCapability = (
   return models;
 };
 
-export const getModelsByProvider = (provider: string): ModelConfig[] => {
-  const models: ModelConfig[] = [];
+// Models that have been retired but still appear in older generatedImages rows.
+const LEGACY_MODEL_LABELS: Record<string, string> = {
+  "r/gpt-image-1": "GPT Image (retired)",
+  "o/gpt-image-1": "GPT Image (retired)",
+  "gpt-4.1-mini": "GPT-4.1 mini (retired)",
+};
 
-  modelRegistry.forEach((config, model) => {
-    if (config.provider === provider) {
-      models.push({ ...config, id: model });
-    }
-  });
+export const getModelDisplayName = (model?: string | null): string | null => {
+  if (!model) return null;
 
-  return models;
+  return (
+    modelRegistry.get(model as AnyModel)?.name ??
+    LEGACY_MODEL_LABELS[model] ??
+    model
+  );
 };
 
 export const createStyleInstruction = (style: string): string => {
@@ -57,6 +62,35 @@ export const createStyleInstruction = (style: string): string => {
   return instructions;
 };
 
+/**
+ * Replicate returns either a bare URI string (flux-kontext-pro,
+ * flux-1.1-pro-ultra, background-remover) or an array of URIs (flux-schnell).
+ * Normalize to the first URI.
+ */
+export const firstOutputUri = (output: unknown, model: string): string => {
+  const value = Array.isArray(output) ? output[0] : output;
+
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error(`Invalid image output from Replicate for model "${model}"`);
+  }
+
+  return value;
+};
+
+/**
+ * Replicate text models stream token-by-token, so `wait()` resolves with the
+ * accumulated array of string chunks.
+ */
+export const joinTextOutput = (output: unknown, model: string): string => {
+  const text = Array.isArray(output) ? output.join("") : output;
+
+  if (typeof text !== "string") {
+    throw new Error(`Invalid text output from Replicate for model "${model}"`);
+  }
+
+  return text;
+};
+
 export const createSketchGuidanceInstruction = (
   strictness: SketchGuidanceStrictness,
 ): string => {
@@ -78,4 +112,70 @@ export const createSketchGuidanceInstruction = (
   }
 
   return instructions;
+};
+
+/**
+ * flux-1.1-pro-ultra blends its `image_prompt` with the text prompt via
+ * `image_prompt_strength` (0-1, model default 0.1). Higher means the reference
+ * image dominates.
+ *
+ * These are deliberately lower than they might look right on paper: the
+ * reference here is `editor.canvas.toDataURL()` — a mostly-flat workspace fill
+ * with thin strokes on it, not a photo. Push "strict" up near 0.85 and ultra
+ * faithfully reproduces that near-blank canvas, which makes the strictest
+ * setting look the most broken. Tune from real output.
+ */
+export const mapStrictnessToImageStrength = (
+  strictness: SketchGuidanceStrictness = "moderate",
+): number => {
+  switch (strictness) {
+    case "strict":
+      return 0.6;
+    case "moderate":
+      return 0.35;
+    case "loose":
+      return 0.15;
+  }
+};
+
+export interface ImagePromptOptions {
+  prompt: string;
+  style?: string;
+  strictness?: SketchGuidanceStrictness;
+  /**
+   * True only when an image is actually being sent to the model. This is a
+   * per-request fact, not a per-model one: without it, a sketch-capable model
+   * invoked on an empty canvas still gets told to "use the provided sketch as
+   * a strict blueprint".
+   */
+  withImageGuidance?: boolean;
+  /** Trailing hard constraints, e.g. "NO TEXT, ONLY IMAGE". */
+  suffix?: string;
+}
+
+export const buildImagePrompt = ({
+  prompt,
+  style,
+  strictness = "moderate",
+  withImageGuidance = false,
+  suffix,
+}: ImagePromptOptions): string => {
+  const blocks: string[] = [];
+
+  if (withImageGuidance) {
+    blocks.push(
+      `[SKETCH GUIDANCE] ${createSketchGuidanceInstruction(strictness)}`,
+    );
+  }
+
+  // createStyleInstruction returns "" for anything outside its switch, which
+  // would otherwise emit a bare [STYLE GUIDANCE] label.
+  const styleInstruction = style ? createStyleInstruction(style) : "";
+  if (styleInstruction) {
+    blocks.push(`[STYLE GUIDANCE] ${styleInstruction}`);
+  }
+
+  blocks.push(`[USER PROMPT] ${suffix ? `${prompt}, ${suffix}` : prompt}`);
+
+  return blocks.join("\n");
 };

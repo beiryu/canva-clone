@@ -2,6 +2,119 @@ import { fabric } from "fabric";
 import type { RGBColor } from "react-color";
 import { uuid } from "uuidv4";
 
+import { CropRect } from "@/features/editor/types";
+
+/**
+ * Size of the untouched source bitmap.
+ *
+ * Deliberately reads `_originalElement` rather than `getOriginalSize()`, which
+ * measures the *filtered* `_element` — once a filter that resizes has run, that
+ * returns the wrong bounds, and crop offsets are always in original-image space.
+ */
+export function getImageNaturalSize(image: fabric.Image) {
+  // @ts-ignore — _originalElement is internal but the only correct source here.
+  const element = image._originalElement as HTMLImageElement | undefined;
+
+  return {
+    width: element?.naturalWidth || image.width || 0,
+    height: element?.naturalHeight || image.height || 0,
+  };
+}
+
+/**
+ * Keeps a crop window inside the bitmap and above a minimum size. Without this
+ * fabric silently clamps an oversized window while drawing, leaving part of the
+ * object's box empty instead of erroring.
+ */
+export function clampCropRect(
+  rect: CropRect,
+  natural: { width: number; height: number },
+  minSize = 20,
+): CropRect {
+  const width = Math.min(Math.max(rect.width, minSize), natural.width);
+  const height = Math.min(Math.max(rect.height, minSize), natural.height);
+
+  return {
+    width,
+    height,
+    x: Math.min(Math.max(rect.x, 0), natural.width - width),
+    y: Math.min(Math.max(rect.y, 0), natural.height - height),
+  };
+}
+
+/**
+ * Maps a source-bitmap pixel to scene coordinates, assuming the image is
+ * currently showing its full bitmap (as it is during crop mode). Fabric renders
+ * images from a centre origin, hence the half-size shift.
+ */
+export function sourceToScene(
+  image: fabric.Image,
+  sourceX: number,
+  sourceY: number,
+) {
+  const natural = getImageNaturalSize(image);
+
+  return fabric.util.transformPoint(
+    new fabric.Point(sourceX - natural.width / 2, sourceY - natural.height / 2),
+    image.calcTransformMatrix(),
+  );
+}
+
+/**
+ * Maps a scene point back to a source-bitmap pixel. Inverse of `sourceToScene`,
+ * and the simplest way to test whether a pointer is inside a rotated crop
+ * window: undo the transform and compare against an axis-aligned rect.
+ */
+export function sceneToSource(image: fabric.Image, point: fabric.Point) {
+  const natural = getImageNaturalSize(image);
+  const local = fabric.util.transformPoint(
+    point,
+    fabric.util.invertTransform(image.calcTransformMatrix()),
+  );
+
+  return {
+    x: local.x + natural.width / 2,
+    y: local.y + natural.height / 2,
+  };
+}
+
+/**
+ * Converts a scene-space drag delta into source-bitmap pixels, undoing the
+ * object's rotation and scale. This is what makes a rotated image croppable.
+ */
+export function sceneDeltaToSource(
+  image: fabric.Image,
+  deltaX: number,
+  deltaY: number,
+) {
+  const unrotated = fabric.util.rotateVector(
+    new fabric.Point(deltaX, deltaY),
+    -fabric.util.degreesToRadians(image.angle || 0),
+  );
+
+  return {
+    x: unrotated.x / (image.scaleX || 1),
+    y: unrotated.y / (image.scaleY || 1),
+  };
+}
+
+/** Inverse of `sceneDeltaToSource`. */
+export function sourceDeltaToScene(
+  image: fabric.Image,
+  deltaX: number,
+  deltaY: number,
+) {
+  const scaled = new fabric.Point(
+    deltaX * (image.scaleX || 1),
+    deltaY * (image.scaleY || 1),
+  );
+
+  return fabric.util.rotateVector(
+    scaled,
+    fabric.util.degreesToRadians(image.angle || 0),
+  );
+}
+
 export function transformText(objects: any) {
   if (!objects) return;
 

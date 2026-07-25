@@ -1,18 +1,19 @@
 import Link from "next/link";
-import { AlertTriangle, Loader, Search, Upload, X } from "lucide-react";
+import { AlertTriangle, Loader, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { Editor } from "@/features/editor/types";
 import { ToolSidebarClose } from "@/features/editor/components/tool-sidebar-close";
 import { ToolSidebarHeader } from "@/features/editor/components/tool-sidebar-header";
+import { ImageSearchInput } from "@/features/editor/components/image-search-input";
 
 import { useGetImages } from "@/features/images/api/use-get-images";
+import { useGetGoogleImages } from "@/features/images/api/use-get-google-images";
+import { useImportImage } from "@/features/images/api/use-import-image";
 import { useUploadImage } from "@/features/images/api/use-upload-image";
 
 import { cn } from "@/lib/utils";
-import { useDebounce } from "@/hooks/use-debounce";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getImageUrl } from "@/features/images/utils";
@@ -32,25 +33,30 @@ export const ImageSidebar = ({
 }: ImageSidebarProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Submitted queries — only updated when the user presses Enter.
   const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search);
+  const [googleSearch, setGoogleSearch] = useState("");
+
+  // Tracks which search result is being re-hosted, so its tile can show a spinner.
+  const [importingUrl, setImportingUrl] = useState<string | null>(null);
 
   const {
     unsplashImages,
     uploadedImages,
     isLoadingStock,
     isErrorStock,
-    isFetchingStock,
     isLoadingUploads,
     isErrorUploads,
-  } = useGetImages(debouncedSearch);
+  } = useGetImages(search);
+
+  const {
+    data: googleImages,
+    isLoading: isLoadingGoogle,
+    isError: isErrorGoogle,
+  } = useGetGoogleImages(googleSearch);
 
   const { mutate: uploadImage, isPending: isUploading } = useUploadImage();
-
-  const handleClose = () => {
-    setSearch("");
-    onClose();
-  };
+  const { mutateAsync: importImage } = useImportImage();
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -73,6 +79,36 @@ export const ImageSidebar = ({
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
+  };
+
+  // Both Google and Unsplash results are re-hosted on Supabase before they hit
+  // the canvas: Google because those hosts serve no CORS headers, Unsplash so a
+  // project stops depending on an external CDN and the image lands in Uploads.
+  const handleRemoteImageClick = async (
+    imageUrl: string,
+    source: "google" | "unsplash",
+    downloadLocation?: string,
+  ) => {
+    if (importingUrl) return;
+
+    setImportingUrl(imageUrl);
+
+    try {
+      const { data } = await importImage({
+        imageUrl,
+        projectId,
+        source,
+        downloadLocation,
+      });
+
+      if (data?.fullPath) {
+        editor?.addImage(getImageUrl(data.fullPath));
+      }
+    } catch (error) {
+      console.error("Import failed:", error);
+    } finally {
+      setImportingUrl(null);
+    }
   };
 
   return (
@@ -117,10 +153,13 @@ export const ImageSidebar = ({
           <div className="px-4 pt-4">
             <TabsList className="w-full">
               <TabsTrigger value="uploaded" className="flex-1">
-                Your Uploads
+                Uploads
               </TabsTrigger>
               <TabsTrigger value="stock" className="flex-1">
-                Stock Images
+                Stock
+              </TabsTrigger>
+              <TabsTrigger value="google" className="flex-1">
+                Google
               </TabsTrigger>
             </TabsList>
           </div>
@@ -167,28 +206,7 @@ export const ImageSidebar = ({
           </TabsContent>
 
           <TabsContent value="stock" className="p-4 pt-2">
-            <div className="relative mb-4">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search photos..."
-                className="h-9 pl-8 pr-14"
-              />
-              {isFetchingStock && (
-                <Loader className="absolute right-8 top-1/2 -translate-y-1/2 size-4 text-muted-foreground animate-spin" />
-              )}
-              {search.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setSearch("")}
-                  aria-label="Clear search"
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition"
-                >
-                  <X className="size-4" />
-                </button>
-              )}
-            </div>
+            <ImageSearchInput onSearch={setSearch} />
 
             {isLoadingStock ? (
               <div className="flex items-center justify-center py-8">
@@ -204,8 +222,8 @@ export const ImageSidebar = ({
             ) : unsplashImages.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8">
                 <p className="text-muted-foreground text-sm text-center">
-                  {debouncedSearch
-                    ? `No results for "${debouncedSearch}"`
+                  {search
+                    ? `No results for "${search}"`
                     : "No stock images available"}
                 </p>
               </div>
@@ -213,9 +231,16 @@ export const ImageSidebar = ({
               <div className="grid grid-cols-2 gap-4">
                 {unsplashImages.map((image) => (
                   <button
-                    onClick={() => editor?.addImage(image.urls.regular)}
+                    onClick={() =>
+                      handleRemoteImageClick(
+                        image.urls.regular,
+                        "unsplash",
+                        image.links.download_location,
+                      )
+                    }
+                    disabled={Boolean(importingUrl)}
                     key={image.id}
-                    className="relative w-full h-[100px] group hover:opacity-75 transition bg-muted rounded-sm overflow-hidden border"
+                    className="relative w-full h-[100px] group hover:opacity-75 transition bg-muted rounded-sm overflow-hidden border disabled:cursor-not-allowed"
                   >
                     <Image
                       src={image?.urls?.small || image?.urls?.thumb}
@@ -224,6 +249,11 @@ export const ImageSidebar = ({
                       loading="lazy"
                       fill
                     />
+                    {importingUrl === image.urls.regular && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                        <Loader className="size-4 text-white animate-spin" />
+                      </div>
+                    )}
                     <Link
                       target="_blank"
                       href={image.links.html}
@@ -236,9 +266,74 @@ export const ImageSidebar = ({
               </div>
             )}
           </TabsContent>
+
+          <TabsContent value="google" className="p-4 pt-2">
+            <ImageSearchInput
+              onSearch={setGoogleSearch}
+              placeholder="Search Google Images..."
+            />
+
+            {!googleSearch ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <p className="text-muted-foreground text-sm text-center">
+                  Search Google for images
+                </p>
+              </div>
+            ) : isLoadingGoogle ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader className="size-4 text-muted-foreground animate-spin" />
+              </div>
+            ) : isErrorGoogle ? (
+              <div className="flex flex-col gap-y-4 items-center justify-center py-8">
+                <AlertTriangle className="size-4 text-muted-foreground" />
+                <p className="text-muted-foreground text-xs">
+                  Failed to search images
+                </p>
+              </div>
+            ) : !googleImages || googleImages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <p className="text-muted-foreground text-sm text-center">
+                  {`No results for "${googleSearch}"`}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                {googleImages.map((image) => (
+                  <button
+                    onClick={() =>
+                      handleRemoteImageClick(image.imageUrl, "google")
+                    }
+                    disabled={Boolean(importingUrl)}
+                    key={image.imageUrl}
+                    className="relative w-full h-[100px] group hover:opacity-75 transition bg-muted rounded-sm overflow-hidden border disabled:cursor-not-allowed"
+                  >
+                    <Image
+                      src={image.thumbnailUrl}
+                      alt={image.title || "Image"}
+                      className="object-cover w-full h-full"
+                      loading="lazy"
+                      fill
+                    />
+                    {importingUrl === image.imageUrl && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                        <Loader className="size-4 text-white animate-spin" />
+                      </div>
+                    )}
+                    <Link
+                      target="_blank"
+                      href={image.link}
+                      className="opacity-0 group-hover:opacity-100 absolute left-0 bottom-0 w-full text-[10px] truncate text-white hover:underline p-1 bg-black/50 text-left"
+                    >
+                      {image.source}
+                    </Link>
+                  </button>
+                ))}
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
       </ScrollArea>
-      <ToolSidebarClose onClick={handleClose} />
+      <ToolSidebarClose onClick={onClose} />
     </aside>
   );
 };

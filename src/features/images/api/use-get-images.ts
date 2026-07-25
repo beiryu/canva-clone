@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 import { client } from "@/lib/hono";
 
@@ -23,8 +23,6 @@ export const useGetUnsplashImages = (query?: string) => {
       const { data } = await response.json();
       return data;
     },
-    // Keep the previous grid on screen while a new search is in flight.
-    placeholderData: keepPreviousData,
     staleTime: UNSPLASH_STALE_TIME,
   });
 
@@ -60,7 +58,6 @@ export const useGetImages = (query?: string) => {
     uploadedImages: uploadedQuery.data || [],
     isLoadingStock: unsplashQuery.isLoading,
     isErrorStock: unsplashQuery.isError,
-    isFetchingStock: unsplashQuery.isFetching,
     isLoadingUploads: uploadedQuery.isLoading,
     isErrorUploads: uploadedQuery.isError,
   };

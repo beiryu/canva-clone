@@ -8,6 +8,8 @@ import {
 export const IMAGES_BUCKET_NAME = "images";
 export const TEMP_IMAGES_BUCKET_NAME = "temp-images";
 
+const MAX_REMOTE_IMAGE_BYTES = 10 * 1024 * 1024;
+
 /**
  * Upload a file to Supabase storage
  */
@@ -69,7 +71,20 @@ export async function uploadRemoteImageToSupabase(
 
     // Get the content type and create a blob
     const contentType = response.headers.get("content-type") || "image/png";
+
+    // Remote hosts happily serve HTML error pages with a 200; storing one would
+    // produce a file that silently fails to render later.
+    if (!contentType.startsWith("image/")) {
+      throw new Error(`Expected an image but got "${contentType}"`);
+    }
+
     const blob = await response.blob();
+
+    if (blob.size > MAX_REMOTE_IMAGE_BYTES) {
+      throw new Error(
+        `Image is too large (${Math.round(blob.size / 1024 / 1024)}MB, max ${MAX_REMOTE_IMAGE_BYTES / 1024 / 1024}MB)`,
+      );
+    }
 
     // Create a file from the blob
     const fileName = `${prefix}_${Date.now()}.${contentType.split("/")[1] || "png"}`;

@@ -6,7 +6,6 @@ import {
   Pencil,
   Settings,
   Shapes,
-  Sparkles,
   Type,
 } from "lucide-react";
 
@@ -59,12 +58,6 @@ export const Sidebar = ({
           isActive={activePanel === "shapes"}
           onClick={() => onTogglePanel("shapes")}
         />
-        {/* <SidebarItem
-          icon={Sparkles}
-          label="AI"
-          isActive={activePanel === "ai"}
-          onClick={() => onTogglePanel("ai")}
-        /> */}
         <SidebarItem
           icon={Settings}
           label="Settings"

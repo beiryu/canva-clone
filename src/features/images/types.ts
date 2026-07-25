@@ -11,10 +11,25 @@ export type StockImage = {
   };
   links: {
     html: string;
+    // Unsplash API Guidelines: picking a photo must fire a download event.
+    download_location: string;
   };
   user: {
     name: string;
   };
+};
+
+// Normalized shape returned by GET /api/images/google. `imageUrl` points at an
+// arbitrary third-party host, so it is never loaded by the browser directly —
+// it goes through POST /api/images/import to be re-hosted on Supabase first.
+export type GoogleImage = {
+  title: string;
+  imageUrl: string;
+  thumbnailUrl: string;
+  source: string;
+  link: string;
+  width: number;
+  height: number;
 };
 
 export type ResponseUploadedFile = {

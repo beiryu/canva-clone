@@ -12,8 +12,13 @@ import {
   AlignCenter,
   AlignRight,
   Trash,
-  SquareSplitHorizontal,
+  PersonStanding,
   Copy,
+  Loader2,
+  FlipHorizontal,
+  FlipVertical,
+  Crop,
+  Check,
 } from "lucide-react";
 
 import { isTextType } from "@/features/editor/utils";
@@ -33,12 +38,24 @@ interface ToolbarProps {
   editor: Editor | undefined;
   activePanel: ActivePanel | null;
   onTogglePanel: (panel: ActivePanel) => void;
+  onRemoveBackground: () => void;
+  isRemovingBackground?: boolean;
+  onStartCrop: () => void;
+  onApplyCrop: () => void;
+  onCancelCrop: () => void;
+  isCropping?: boolean;
 }
 
 export const Toolbar = ({
   editor,
   activePanel,
   onTogglePanel,
+  onRemoveBackground,
+  isRemovingBackground,
+  onStartCrop,
+  onApplyCrop,
+  onCancelCrop,
+  isCropping,
 }: ToolbarProps) => {
   const initialFillColor = editor?.getActiveFillColor();
   const initialStrokeColor = editor?.getActiveStrokeColor();
@@ -148,6 +165,29 @@ export const Toolbar = ({
       fontUnderline: newValue,
     }));
   };
+
+  // Crop mode replaces the toolbar entirely: the usual actions don't apply
+  // mid-crop, and Delete in particular would remove the image being cropped.
+  if (isCropping) {
+    return (
+      <div className="shrink-0 h-[56px] border-b bg-black w-full flex items-center z-[49] p-2 gap-x-2">
+        <Button
+          onClick={onApplyCrop}
+          size="sm"
+          className="bg-primary text-black font-medium"
+        >
+          <Check className="size-4 mr-2" />
+          Done
+        </Button>
+        <Button onClick={onCancelCrop} size="sm" variant="ghost">
+          Cancel
+        </Button>
+        <span className="text-muted-foreground text-xs ml-2">
+          Drag the frame or the photo · Enter to apply · Esc to cancel
+        </span>
+      </div>
+    );
+  }
 
   if (editor?.selectedObjects.length === 0) {
     return (
@@ -347,14 +387,35 @@ export const Toolbar = ({
       )}
       {isImage && (
         <div className="flex items-center h-full justify-center">
-          <Hint label="Remove background" side="bottom" sideOffset={5}>
+          <Hint
+            label={
+              isRemovingBackground
+                ? "Removing background..."
+                : "Remove background"
+            }
+            side="bottom"
+            sideOffset={5}
+          >
             <Button
-              onClick={() => onTogglePanel("remove-bg")}
+              onClick={onRemoveBackground}
+              disabled={isRemovingBackground}
               size="icon"
               variant="ghost"
-              className={cn(activePanel === "remove-bg" && "bg-muted")}
             >
-              <SquareSplitHorizontal className="size-4" />
+              {isRemovingBackground ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <PersonStanding className="size-4" />
+              )}
+            </Button>
+          </Hint>
+        </div>
+      )}
+      {isImage && (
+        <div className="flex items-center h-full justify-center">
+          <Hint label="Crop" side="bottom" sideOffset={5}>
+            <Button onClick={onStartCrop} size="icon" variant="ghost">
+              <Crop className="size-4" />
             </Button>
           </Hint>
         </div>
@@ -378,6 +439,28 @@ export const Toolbar = ({
             variant="ghost"
           >
             <ArrowDown className="size-4" />
+          </Button>
+        </Hint>
+      </div>
+      <div className="flex items-center h-full justify-center">
+        <Hint label="Flip horizontal" side="bottom" sideOffset={5}>
+          <Button
+            onClick={() => editor?.flipHorizontal()}
+            size="icon"
+            variant="ghost"
+          >
+            <FlipHorizontal className="size-4" />
+          </Button>
+        </Hint>
+      </div>
+      <div className="flex items-center h-full justify-center">
+        <Hint label="Flip vertical" side="bottom" sideOffset={5}>
+          <Button
+            onClick={() => editor?.flipVertical()}
+            size="icon"
+            variant="ghost"
+          >
+            <FlipVertical className="size-4" />
           </Button>
         </Hint>
       </div>

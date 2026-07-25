@@ -15,6 +15,8 @@ import {
 import { Navbar } from "@/features/editor/components/navbar";
 import { Footer } from "@/features/editor/components/footer";
 import { useEditor } from "@/features/editor/hooks/use-editor";
+import { useRemoveBackground } from "@/features/editor/hooks/use-remove-background";
+import { useCrop } from "@/features/editor/hooks/use-crop";
 import { Sidebar } from "@/features/editor/components/sidebar";
 import { Toolbar } from "@/features/editor/components/toolbar";
 import { ShapeSidebar } from "@/features/editor/components/shape-sidebar";
@@ -27,9 +29,7 @@ import { FontSidebar } from "@/features/editor/components/font-sidebar";
 import { ImageSidebar } from "@/features/editor/components/image-sidebar";
 import { FilterSidebar } from "@/features/editor/components/filter-sidebar";
 import { DrawSidebar } from "@/features/editor/components/draw-sidebar";
-import { AiSidebar } from "@/features/editor/components/ai-sidebar";
 import { TemplateSidebar } from "@/features/editor/components/template-sidebar";
-import { RemoveBgSidebar } from "@/features/editor/components/remove-bg-sidebar";
 import { SettingsSidebar } from "@/features/editor/components/settings-sidebar";
 import { GenerateSidebar } from "@/features/editor/components/generate-sidebar";
 import { MagicWandButton } from "@/features/editor/components/magic-wand-button";
@@ -70,13 +70,41 @@ export const Editor = ({ initialData }: EditorProps) => {
     );
   }, []);
 
+  // Read inside the keydown handler rather than passed as a value: useCrop needs
+  // the editor that useEditor returns, so a boolean would be circular.
+  const isCroppingRef = useRef(false);
+
   const { init, editor } = useEditor({
     defaultState: initialData.json,
     defaultWidth: initialData.width,
     defaultHeight: initialData.height,
     clearSelectionCallback: onClearSelection,
     saveCallback: debouncedSave,
+    isCroppingRef,
   });
+
+  const { removeBackground, isRemovingBackground } = useRemoveBackground({
+    editor,
+    projectId: initialData.id,
+  });
+
+  const onCropEnter = useCallback(() => {
+    setCanvasMode("crop");
+    // Panels are siblings in a flex row, so only one may be visible at a time.
+    setActivePanel(null);
+  }, []);
+
+  const onCropExit = useCallback(() => setCanvasMode("select"), []);
+
+  const { isCropping, startCrop, applyCrop, cancelCrop } = useCrop({
+    editor,
+    onEnter: onCropEnter,
+    onExit: onCropExit,
+  });
+
+  useEffect(() => {
+    isCroppingRef.current = isCropping;
+  }, [isCropping]);
 
   const closePanel = useCallback(() => setActivePanel(null), []);
 
@@ -85,12 +113,24 @@ export const Editor = ({ initialData }: EditorProps) => {
     setCanvasMode("select");
   }, [editor]);
 
+  // Only one canvas mode at a time: leaving a crop by any other route discards
+  // it rather than committing, matching Esc.
+  const leaveCrop = useCallback(() => {
+    if (isCropping) cancelCrop();
+  }, [cancelCrop, isCropping]);
+
   const enterDrawMode = useCallback(() => {
+    leaveCrop();
     editor?.enableDrawingMode();
     setCanvasMode("draw");
     // Panels are siblings in a flex row, so only one may be visible at a time.
     setActivePanel(null);
-  }, [editor]);
+  }, [editor, leaveCrop]);
+
+  const onStartCrop = useCallback(() => {
+    exitDrawMode();
+    startCrop();
+  }, [exitDrawMode, startCrop]);
 
   const toggleDrawMode = useCallback(() => {
     if (canvasMode === "draw") {
@@ -103,10 +143,11 @@ export const Editor = ({ initialData }: EditorProps) => {
 
   const togglePanel = useCallback(
     (panel: ActivePanel) => {
+      leaveCrop();
       exitDrawMode();
       setActivePanel((current) => (current === panel ? null : panel));
     },
-    [exitDrawMode],
+    [exitDrawMode, leaveCrop],
   );
 
   const canvasRef = useRef(null);
@@ -194,17 +235,6 @@ export const Editor = ({ initialData }: EditorProps) => {
           isOpen={activePanel === "filter"}
           onClose={closePanel}
         />
-        <AiSidebar
-          editor={editor}
-          isOpen={activePanel === "ai"}
-          onClose={closePanel}
-        />
-        <RemoveBgSidebar
-          editor={editor}
-          isOpen={activePanel === "remove-bg"}
-          onClose={closePanel}
-          projectId={initialData.id}
-        />
         <DrawSidebar
           editor={editor}
           isOpen={canvasMode === "draw"}
@@ -222,6 +252,12 @@ export const Editor = ({ initialData }: EditorProps) => {
                 editor={editor}
                 activePanel={activePanel}
                 onTogglePanel={togglePanel}
+                onRemoveBackground={removeBackground}
+                isRemovingBackground={isRemovingBackground}
+                onStartCrop={onStartCrop}
+                onApplyCrop={applyCrop}
+                onCancelCrop={cancelCrop}
+                isCropping={isCropping}
                 key={JSON.stringify(editor?.canvas.getActiveObject())}
               />
               <div className="flex-1 h-[calc(90%)] bg-muted" ref={containerRef}>

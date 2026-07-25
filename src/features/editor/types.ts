@@ -1,6 +1,13 @@
 import { fabric } from "fabric";
 import { ITextboxOptions } from "fabric/fabric-impl";
 import * as material from "material-colors";
+import type { MutableRefObject } from "react";
+
+import {
+  ImageAspectRatio,
+  ImageQuality,
+  SketchGuidanceStrictness,
+} from "@/features/agents/types";
 
 export const JSON_KEYS = [
   "name",
@@ -65,7 +72,6 @@ export const selectionDependentPanels: ActivePanel[] = [
   "font",
   "filter",
   "opacity",
-  "remove-bg",
   "stroke-color",
   "stroke-width",
 ];
@@ -102,17 +108,27 @@ export type ActivePanel =
   | "images"
   | "templates"
   | "settings"
-  | "ai"
   | "fill"
   | "stroke-color"
   | "stroke-width"
   | "font"
   | "opacity"
-  | "filter"
-  | "remove-bg";
+  | "filter";
 
 /** How the canvas reacts to the pointer. */
-export type CanvasMode = "select" | "draw";
+export type CanvasMode = "select" | "draw" | "crop";
+
+/**
+ * A crop window, in SOURCE-BITMAP PIXELS — the same units as fabric's
+ * `cropX`/`cropY`, and independent of the object's scale, rotation or position.
+ * Not screen pixels.
+ */
+export type CropRect = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
 
 export const FILL_COLOR = "rgb(214, 255, 58, 1)";
 export const STROKE_COLOR = "rgba(214, 255, 58, 1)";
@@ -178,6 +194,12 @@ export interface EditorHookProps {
   defaultWidth?: number;
   defaultHeight?: number;
   clearSelectionCallback?: () => void;
+  /**
+   * Lets crop mode mute the global hotkeys. A ref rather than a boolean because
+   * `useCrop` needs the `editor` this hook returns, so the flag cannot travel
+   * in as a value without a circular dependency.
+   */
+  isCroppingRef?: MutableRefObject<boolean>;
   saveCallback?: (values: {
     json: string;
     height: number;
@@ -230,6 +252,8 @@ export interface Editor {
   onPaste: () => void;
   changeImageFilter: (value: string) => void;
   addImage: (value: string) => void;
+  replaceImageSrc: (object: fabric.Image, value: string) => void;
+  applyCrop: (image: fabric.Image, rect: CropRect) => void;
   delete: () => void;
   changeFontSize: (value: number) => void;
   getActiveFontSize: () => number;
@@ -248,6 +272,8 @@ export interface Editor {
   addText: (value: string, options?: ITextboxOptions) => void;
   getActiveOpacity: () => number;
   changeOpacity: (value: number) => void;
+  flipHorizontal: () => void;
+  flipVertical: () => void;
   bringForward: () => void;
   sendBackwards: () => void;
   changeStrokeWidth: (value: number) => void;
@@ -271,9 +297,9 @@ export interface Editor {
 export interface GenerateState {
   formData: {
     prompt: string;
-    aspectRatio: string;
-    quality: string;
-    strictness: string;
+    aspectRatio: ImageAspectRatio;
+    quality: ImageQuality;
+    strictness: SketchGuidanceStrictness;
   };
 }
 

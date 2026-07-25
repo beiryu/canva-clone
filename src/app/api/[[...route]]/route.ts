@@ -12,6 +12,12 @@ import authConfig from "@/auth.config";
 // Revert to "edge" if planning on running on the edge
 export const runtime = "nodejs";
 
+// Image generation blocks on replicate.wait(), which polls until the prediction
+// finishes. Flux Kontext Pro and Pro Ultra routinely exceed the default
+// serverless duration, which surfaces as an opaque 504 that looks like a model
+// failure.
+export const maxDuration = 300;
+
 function getAuthConfig(c: Context): AuthConfig {
   return {
     secret: process.env.AUTH_SECRET,

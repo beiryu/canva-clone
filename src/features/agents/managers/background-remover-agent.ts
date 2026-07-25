@@ -1,5 +1,5 @@
 import { modelRegistry } from "../models";
-import { ReplicateProvider } from "../providers/replicate";
+import { getReplicateProvider } from "../providers/replicate";
 import {
   AgentProvider,
   BackgroundRemoverHandler,
@@ -11,7 +11,7 @@ export class BackgroundRemoverAgent {
   private providers: Map<string, AgentProvider> = new Map();
 
   constructor() {
-    this.providers.set("replicate", new ReplicateProvider());
+    this.providers.set("replicate", getReplicateProvider());
   }
 
   async removeBg(options: RemoveBgOptions): Promise<RemoveBgResult> {
@@ -58,18 +58,5 @@ export class BackgroundRemoverAgent {
       handler.capabilities &&
       handler.capabilities.includes("background-remover")
     );
-  }
-
-  // Get available models that support image generation
-  getAvailableModels(): string[] {
-    const models: string[] = [];
-
-    modelRegistry.forEach((config, model) => {
-      if (config.capabilities.includes("background-remover")) {
-        models.push(model as string);
-      }
-    });
-
-    return models;
   }
 }

@@ -26,8 +26,14 @@ import { toast } from "sonner";
 import { useVisualStyle } from "@/features/editor/store/use-visual-style";
 import { useAgentGenerateImage } from "@/features/ai/api/use-agent-generate-image";
 import { useAgentEnhancePrompt } from "@/features/ai/api/use-agent-enhance-prompt";
+import { DEFAULT_IMAGE_MODEL } from "@/features/agents/model-ids";
 import { modelRegistry } from "@/features/agents/models";
-import { ImageGenerationModel } from "@/features/agents/types";
+import {
+  ImageAspectRatio,
+  ImageGenerationModel,
+  ImageQuality,
+  SketchGuidanceStrictness,
+} from "@/features/agents/types";
 import { getModelsByCapability } from "@/features/agents/utils";
 
 interface GenerateSidebarProps {
@@ -38,11 +44,16 @@ interface GenerateSidebarProps {
 }
 
 // Action type
-type FormAction = {
-  type: "UPDATE_FORM";
-  field: keyof GenerateState["formData"];
-  value: any;
-};
+type FormAction =
+  | {
+      type: "UPDATE_FORM";
+      field: keyof GenerateState["formData"];
+      value: any;
+    }
+  | {
+      type: "PATCH_FORM";
+      patch: Partial<GenerateState["formData"]>;
+    };
 
 // Reducer function
 const reducer = (state: GenerateState, action: FormAction): GenerateState => {
@@ -53,6 +64,14 @@ const reducer = (state: GenerateState, action: FormAction): GenerateState => {
         formData: {
           ...state.formData,
           [action.field]: action.value,
+        },
+      };
+    case "PATCH_FORM":
+      return {
+        ...state,
+        formData: {
+          ...state.formData,
+          ...action.patch,
         },
       };
     default:
@@ -66,7 +85,7 @@ export const GenerateSidebar = ({
   onClose,
   projectId,
 }: GenerateSidebarProps) => {
-  const [model, setModel] = useState<ImageGenerationModel>("r/gpt-image-1");
+  const [model, setModel] = useState<ImageGenerationModel>(DEFAULT_IMAGE_MODEL);
 
   const { selectedStyle } = useVisualStyle();
 
@@ -79,27 +98,39 @@ export const GenerateSidebar = ({
 
   // Get model params based on selected model
   const getModelParams = useCallback(() => {
-    return (
-      modelRegistry.get(model)?.params || {
-        quality: ["low", "medium", "high"],
-        aspectRatio: ["1:1", "3:2", "2:3"],
-      }
-    );
+    return modelRegistry.get(model)?.params ?? {};
   }, [model]);
 
   const modelParams = getModelParams();
 
-  const handleFormChange = (
-    field: keyof GenerateState["formData"],
-    value: any,
+  const handleFormChange = <K extends keyof GenerateState["formData"]>(
+    field: K,
+    value: GenerateState["formData"][K],
   ) => {
     dispatch({ type: "UPDATE_FORM", field, value });
   };
 
-  const handleModelChange = (value: ImageGenerationModel) => {
-    setModel(value);
-    handleFormChange("aspectRatio", "1:1");
-    handleFormChange("quality", "high");
+  // Keep the user's existing choices when the incoming model supports them, and
+  // only fall back when it does not. Resetting unconditionally would discard a
+  // deliberate aspect-ratio pick on every model switch, and would set a quality
+  // value on models that have no quality control at all.
+  const handleModelChange = (next: ImageGenerationModel) => {
+    const params = modelRegistry.get(next)?.params ?? {};
+    const patch: Partial<GenerateState["formData"]> = {};
+
+    const ratios = params.aspectRatio ?? [];
+    if (ratios.length && !ratios.includes(formData.aspectRatio)) {
+      patch.aspectRatio = (ratios[0] as ImageAspectRatio) ?? "1:1";
+    }
+
+    if (params.quality?.length && !params.quality.includes(formData.quality)) {
+      patch.quality = params.quality[0] as ImageQuality;
+    }
+
+    setModel(next);
+    if (Object.keys(patch).length) {
+      dispatch({ type: "PATCH_FORM", patch });
+    }
   };
 
   const handleEnhancePrompt = useCallback(async () => {
@@ -116,7 +147,7 @@ export const GenerateSidebar = ({
     try {
       await agentEnhancePrompt.mutateAsync(
         {
-          model: "gpt-4.1-mini",
+          // Model choice is the server's default.
           prompt: formData.prompt,
         },
         {
@@ -140,26 +171,43 @@ export const GenerateSidebar = ({
       return;
     }
 
-    // Get canvas image as base64
-    const canvasImage = editor.canvas?.toDataURL({
-      format: "png",
-      quality: 1,
-    });
+    // Only capture the canvas when the model can actually consume it, and only
+    // when something has been drawn. An untouched canvas still serialises to a
+    // valid image — the flat workspace fill — which a sketch model would
+    // faithfully treat as a blueprint. "clip" is the workspace rect itself.
+    const hasSketch = (editor.canvas?.getObjects() ?? []).some(
+      (object) => object.name !== "clip",
+    );
+
+    const canvasImage =
+      modelParams.supportsImageInput && hasSketch
+        ? editor.canvas?.toDataURL({ format: "png", quality: 1 })
+        : undefined;
 
     // Use the agent-based image generation
     await agentGenerateImage.mutateAsync({
       projectId,
       prompt: formData.prompt,
       style: selectedStyle.id,
-      canvasImage: canvasImage,
+      canvasImage,
       model,
       settings: {
         aspectRatio: formData.aspectRatio,
-        quality: formData.quality,
-        strictness: formData.strictness,
+        ...(modelParams.quality ? { quality: formData.quality } : {}),
+        ...(modelParams.supportsImageInput
+          ? { strictness: formData.strictness }
+          : {}),
       },
     });
-  }, [editor, agentGenerateImage, projectId, formData, selectedStyle, model]);
+  }, [
+    editor,
+    agentGenerateImage,
+    projectId,
+    formData,
+    selectedStyle,
+    model,
+    modelParams,
+  ]);
 
   return (
     <motion.aside
@@ -268,64 +316,71 @@ export const GenerateSidebar = ({
             </div>
 
             {/* Sketch Guidance Controls */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Sketch Guidance</Label>
-              <Select
-                value={formData.strictness}
-                onValueChange={(value) => handleFormChange("strictness", value)}
-              >
-                <SelectTrigger className="bg-muted border">
-                  <SelectValue placeholder="Select guidance level" />
-                </SelectTrigger>
-                <SelectContent className="bg-black p-4 rounded-xl">
-                  <div className="px-2 pb-2 text-muted-foreground text-sm font-medium">
-                    Select level
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <SelectItem
-                      value="loose"
-                      className="group flex items-center gap-4 rounded-lg px-4 py-2"
-                    >
-                      <div className="flex items-center gap-3 w-full">
-                        <span className="font-medium mr-2">Loose</span>
-                        <p className="text-muted-foreground">
-                          (Creative interpretation)
-                        </p>
-                      </div>
-                    </SelectItem>
-                    <SelectItem
-                      value="moderate"
-                      className="group flex items-center gap-4 rounded-lg px-4 py-2"
-                    >
-                      <div className="flex items-center gap-3 w-full">
-                        <span className="font-medium mr-2">Moderate</span>
-                        <p className="text-muted-foreground">
-                          (Follow general layout)
-                        </p>
-                      </div>
-                    </SelectItem>
-                    <SelectItem
-                      value="strict"
-                      className="group flex items-center gap-4 rounded-lg px-4 py-2"
-                    >
-                      <div className="flex items-center gap-3 w-full">
-                        <span className="font-medium mr-2">Strict</span>
-                        <p className="text-muted-foreground">
-                          (Follow sketch exactly)
-                        </p>
-                      </div>
-                    </SelectItem>
-                  </div>
-                </SelectContent>
-              </Select>
-            </div>
+            {modelParams.supportsImageInput && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Sketch Guidance</Label>
+                <Select
+                  value={formData.strictness}
+                  onValueChange={(value) =>
+                    handleFormChange(
+                      "strictness",
+                      value as SketchGuidanceStrictness,
+                    )
+                  }
+                >
+                  <SelectTrigger className="bg-muted border">
+                    <SelectValue placeholder="Select guidance level" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-black p-4 rounded-xl">
+                    <div className="px-2 pb-2 text-muted-foreground text-sm font-medium">
+                      Select level
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <SelectItem
+                        value="loose"
+                        className="group flex items-center gap-4 rounded-lg px-4 py-2"
+                      >
+                        <div className="flex items-center gap-3 w-full">
+                          <span className="font-medium mr-2">Loose</span>
+                          <p className="text-muted-foreground">
+                            (Creative interpretation)
+                          </p>
+                        </div>
+                      </SelectItem>
+                      <SelectItem
+                        value="moderate"
+                        className="group flex items-center gap-4 rounded-lg px-4 py-2"
+                      >
+                        <div className="flex items-center gap-3 w-full">
+                          <span className="font-medium mr-2">Moderate</span>
+                          <p className="text-muted-foreground">
+                            (Follow general layout)
+                          </p>
+                        </div>
+                      </SelectItem>
+                      <SelectItem
+                        value="strict"
+                        className="group flex items-center gap-4 rounded-lg px-4 py-2"
+                      >
+                        <div className="flex items-center gap-3 w-full">
+                          <span className="font-medium mr-2">Strict</span>
+                          <p className="text-muted-foreground">
+                            (Follow sketch exactly)
+                          </p>
+                        </div>
+                      </SelectItem>
+                    </div>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             {/* Aspect Ratio Selection */}
             <div className="space-y-2">
               <Label className="text-sm font-medium">Aspect Ratio</Label>
               <Select
                 value={formData.aspectRatio}
                 onValueChange={(value) =>
-                  handleFormChange("aspectRatio", value)
+                  handleFormChange("aspectRatio", value as ImageAspectRatio)
                 }
               >
                 <SelectTrigger className="bg-muted border">
@@ -369,7 +424,9 @@ export const GenerateSidebar = ({
                 <Label className="text-sm font-medium">Quality</Label>
                 <Select
                   value={formData.quality}
-                  onValueChange={(value) => handleFormChange("quality", value)}
+                  onValueChange={(value) =>
+                    handleFormChange("quality", value as ImageQuality)
+                  }
                 >
                   <SelectTrigger className="bg-muted border">
                     <SelectValue placeholder="Select quality" />
