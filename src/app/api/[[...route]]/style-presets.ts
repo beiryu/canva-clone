@@ -19,11 +19,17 @@ import { convertToFile } from "@/features/images/utils";
  * Appended to every generated preset. These rules are constant and do not
  * depend on the reference image, so they are composed here rather than being
  * asked of a 7B vision model that would sometimes forget them.
+ *
+ * Deliberately limited to what is technically required for a thumbnail to
+ * survive being 168x94 pixels. An earlier version also demanded the subject be
+ * "offset to one side to leave clear negative space for a headline", which read
+ * to the image model as an instruction to omit the headline — the same clause,
+ * for the same reason, was removed from AUTO_PROMPT_SYSTEM. Where the subject
+ * sits is the composition's business, not this constant's.
  */
 const THUMBNAIL_COMPOSITION_RULES =
-  "Compose as a thumbnail: one bold hero subject filling 60-70% of the frame, " +
-  "offset to one side to leave clear negative space for a headline. Push " +
-  "contrast and subject/background separation hard. The image must stay " +
+  "Compose as a thumbnail: one bold hero subject filling 60-70% of the frame. " +
+  "Push contrast and subject/background separation hard. The image must stay " +
   "readable when scaled down to 168x94 pixels, so avoid fine detail, thin " +
   "lines, and busy backgrounds. Keep all key elements inside safe margins.";
 

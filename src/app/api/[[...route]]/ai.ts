@@ -1,14 +1,12 @@
 import { verifyAuth } from "@hono/auth-js";
 import { zValidator } from "@hono/zod-validator";
-import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
 import { db } from "@/db/drizzle";
-import { generatedImages, stylePresets, uploadedImages } from "@/db/schema";
+import { generatedImages, uploadedImages } from "@/db/schema";
 import { AgentManager } from "@/features/agents/managers";
 import {
-  BUILT_IN_STYLE_IDS,
   DEFAULT_TEXT_MODEL,
   IMAGE_ASPECT_RATIOS,
   IMAGE_GENERATION_MODELS,
@@ -23,7 +21,9 @@ import {
   TEMP_IMAGES_BUCKET_NAME,
   uploadFileToSupabase,
 } from "@/features/images/core/supabase";
+import { createStyleInstruction } from "@/features/agents/utils";
 import { convertToFile } from "@/features/images/utils";
+import { resolveStylePreset } from "@/features/style-presets/core/resolve-style-preset";
 
 // Derived from the model-ids tuples rather than modelRegistry.keys(), which
 // widens to AnyModel[] (rejected by z.enum) and would also let the text and
@@ -150,21 +150,17 @@ const app = new Hono()
       // guidance lives in the database. Without this lookup the id would fall
       // through createStyleInstruction's switch, return "", and silently drop
       // the [STYLE GUIDANCE] block — a preset that appears to do nothing.
-      let styleInstruction: string | undefined;
-
-      if (style && !BUILT_IN_STYLE_IDS.includes(style as never)) {
-        const [preset] = await db
-          .select({ instruction: stylePresets.instruction })
-          .from(stylePresets)
-          .where(
-            and(
-              eq(stylePresets.id, style),
-              eq(stylePresets.userId, auth.token.id),
-            ),
-          );
-
-        styleInstruction = preset?.instruction;
-      }
+      //
+      // The reference image comes back too: the stored instruction is only that
+      // image summarised into a paragraph, which is not enough for a generation
+      // to actually look like the reference.
+      const preset = await resolveStylePreset({
+        styleId: style,
+        userId: auth.token.id,
+        // A model that cannot take the canvas cannot take a reference either,
+        // so skip the storage round trip entirely.
+        withReferenceImage: supportsImageInput,
+      });
 
       const agentManager = new AgentManager();
 
@@ -173,7 +169,9 @@ const app = new Hono()
           model,
           prompt,
           style,
-          styleInstruction,
+          styleInstruction: preset?.instruction,
+          styleReferenceImage: preset?.referenceImageUrl ?? undefined,
+          styleReferenceMimeType: preset?.referenceMimeType ?? undefined,
           canvasImage,
           settings: { aspectRatio, quality, strictness },
         });
@@ -225,19 +223,40 @@ const app = new Hono()
         // since the prompt box starts empty.
         canvasImage: z.string().min(1),
         prompt: z.string().optional(),
-        // Text layers read off the canvas. Capped because these ride in the
-        // prompt verbatim and a canvas can hold arbitrarily many text layers.
-        canvasText: z.array(z.string().max(500)).max(20).optional(),
+        // The style *id*, resolved server-side exactly as the generate route
+        // does. Taking the instruction text from the client instead would let
+        // anyone inject arbitrary text into the model's context.
+        style: z.string().optional(),
+        // Only consulted for built-in styles, whose display names live in the
+        // client store rather than the database.
+        styleName: z.string().max(60).optional(),
       }),
     ),
     async (c) => {
-      const { model, canvasImage, prompt, canvasText } = c.req.valid("json");
+      const { model, canvasImage, prompt, style, styleName } =
+        c.req.valid("json");
 
       const auth = c.get("authUser");
 
       if (!auth.token?.id) {
         return c.json({ error: "Unauthorized" }, 401);
       }
+
+      // Text only — the prompt writer needs to know what style is coming, not
+      // to look at it. Handing a vision model the reference image would put the
+      // reference's *subject* into the prompt it writes.
+      const preset = await resolveStylePreset({
+        styleId: style,
+        userId: auth.token.id,
+        withReferenceImage: false,
+      });
+
+      // createStyleInstruction returns "" for anything outside its switch,
+      // which would otherwise read as a style with empty guidance.
+      const styleInstruction =
+        preset?.instruction ||
+        (style ? createStyleInstruction(style) : "") ||
+        undefined;
 
       const agentManager = new AgentManager();
 
@@ -249,7 +268,8 @@ const app = new Hono()
           model,
           canvasImage,
           context: prompt,
-          canvasText,
+          styleName: preset?.name ?? styleName,
+          styleInstruction,
         });
 
         return c.json({

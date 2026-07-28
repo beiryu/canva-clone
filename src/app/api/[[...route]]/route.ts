@@ -13,10 +13,10 @@ import authConfig from "@/auth.config";
 // Revert to "edge" if planning on running on the edge
 export const runtime = "nodejs";
 
-// Image generation blocks on replicate.wait(), which polls until the prediction
-// finishes. Flux Kontext Pro and Pro Ultra routinely exceed the default
-// serverless duration, which surfaces as an opaque 504 that looks like a model
-// failure.
+// Image generation blocks on an unbounded poll — replicate.wait() for Seedream,
+// and OpenAI's images.edit, which holds the request open while gpt-image-2
+// renders. Both routinely exceed the default serverless duration, which
+// surfaces as an opaque 504 that looks like a model failure.
 export const maxDuration = 300;
 
 function getAuthConfig(c: Context): AuthConfig {

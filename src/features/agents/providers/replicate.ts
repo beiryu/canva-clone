@@ -19,7 +19,7 @@ import {
   buildImagePrompt,
   firstOutputUri,
   joinTextOutput,
-  mapStrictnessToImageStrength,
+  orderInputImages,
 } from "../utils";
 
 /**
@@ -30,8 +30,6 @@ import {
  */
 const REPLICATE_SLUGS = {
   "seedream-5-lite": "bytedance/seedream-5-lite",
-  "flux-kontext-pro": "black-forest-labs/flux-kontext-pro",
-  "flux-1.1-pro-ultra": "black-forest-labs/flux-1.1-pro-ultra",
 } as const;
 
 // Model handler for Seedream 5 Lite — text-to-image plus sketch editing.
@@ -47,10 +45,18 @@ class Seedream5LiteHandler
     options: ImageGenerationOptions,
   ): Promise<ImageGenerationResult> {
     try {
-      const { prompt, settings, canvasImage, style, styleInstruction } =
-        options;
+      const {
+        prompt,
+        settings,
+        canvasImage,
+        style,
+        styleInstruction,
+        styleReferenceImage,
+      } = options;
 
       const { aspectRatio = "1:1", strictness = "moderate" } = settings;
+
+      const inputImages = orderInputImages({ canvasImage, styleReferenceImage });
 
       const input = {
         prompt: buildImagePrompt({
@@ -59,16 +65,21 @@ class Seedream5LiteHandler
           styleInstruction,
           strictness,
           withImageGuidance: Boolean(canvasImage),
+          withStyleReference: Boolean(styleReferenceImage),
         }),
         aspect_ratio: aspectRatio,
         size: "2K",
         output_format: "png",
         // "auto" would let the model decide to emit a batch of related images;
-        // the gallery expects exactly one.
+        // the gallery expects exactly one. Two *inputs* do not change that.
         sequential_image_generation: "disabled",
-        // Unlike kontext's singular `input_image` string, this key is an array
-        // of URIs. Omit it entirely when there is no sketch.
-        ...(canvasImage ? { image_input: [canvasImage] } : {}),
+        // An array of URIs, in the same order the [INPUT IMAGES] block
+        // describes. Omit it entirely when there is nothing to attach — an
+        // empty array is not the same as an absent key. Replicate fetches each
+        // URL itself and sniffs the bytes, so no MIME needs passing here.
+        ...(inputImages.length
+          ? { image_input: inputImages.map((image) => image.uri) }
+          : {}),
       };
 
       console.log("Generating image with Seedream 5 Lite", input);
@@ -83,126 +94,6 @@ class Seedream5LiteHandler
       const file = await convertToFile(
         firstOutputUri(completedPrediction.output, this.model),
         { filePrefix: "seedream-5-lite", fileType: "image/png" },
-      );
-
-      return {
-        file,
-        providerName: "replicate",
-        providerImageId: prediction.id,
-      };
-    } catch (error) {
-      console.error("Error with Replicate API:", error);
-      throw error;
-    }
-  }
-}
-
-// Model handler for Flux Kontext Pro — the sketch-to-image model.
-class FluxKontextProHandler
-  extends BaseModelHandler
-  implements ImageGenerationHandler
-{
-  constructor() {
-    super("flux-kontext-pro", ["image-generation"]);
-  }
-
-  async generateImage(
-    options: ImageGenerationOptions,
-  ): Promise<ImageGenerationResult> {
-    try {
-      const { prompt, settings, canvasImage, style, styleInstruction } =
-        options;
-
-      const { aspectRatio = "1:1", strictness = "moderate" } = settings;
-
-      const input = {
-        prompt: buildImagePrompt({
-          prompt,
-          style,
-          styleInstruction,
-          strictness,
-          withImageGuidance: Boolean(canvasImage),
-        }),
-        aspect_ratio: aspectRatio,
-        output_format: "png",
-        // `input_image` is singular and a plain URI string. Omit the key
-        // entirely when there is no sketch rather than sending "".
-        ...(canvasImage ? { input_image: canvasImage } : {}),
-      };
-
-      console.log("Generating image with Flux Kontext Pro", input);
-
-      const prediction = await replicate.predictions.create({
-        model: REPLICATE_SLUGS["flux-kontext-pro"],
-        input,
-      });
-
-      const completedPrediction = await replicate.wait(prediction);
-
-      const file = await convertToFile(
-        firstOutputUri(completedPrediction.output, this.model),
-        { filePrefix: "flux-kontext-pro", fileType: "image/png" },
-      );
-
-      return {
-        file,
-        providerName: "replicate",
-        providerImageId: prediction.id,
-      };
-    } catch (error) {
-      console.error("Error with Replicate API:", error);
-      throw error;
-    }
-  }
-}
-
-class Flux11ProUltraHandler
-  extends BaseModelHandler
-  implements ImageGenerationHandler
-{
-  constructor() {
-    super("flux-1.1-pro-ultra", ["image-generation"]);
-  }
-
-  async generateImage(
-    options: ImageGenerationOptions,
-  ): Promise<ImageGenerationResult> {
-    try {
-      const { prompt, settings, canvasImage, style, styleInstruction } =
-        options;
-
-      const { aspectRatio = "1:1", strictness = "moderate" } = settings;
-
-      const input = {
-        prompt: buildImagePrompt({
-          prompt,
-          style,
-          styleInstruction,
-          strictness,
-          withImageGuidance: Boolean(canvasImage),
-        }),
-        aspect_ratio: aspectRatio,
-        output_format: "jpg",
-        ...(canvasImage
-          ? {
-              image_prompt: canvasImage,
-              image_prompt_strength: mapStrictnessToImageStrength(strictness),
-            }
-          : {}),
-      };
-
-      console.log("Generating image with Flux Pro Ultra", input);
-
-      const prediction = await replicate.predictions.create({
-        model: REPLICATE_SLUGS["flux-1.1-pro-ultra"],
-        input,
-      });
-
-      const completedPrediction = await replicate.wait(prediction);
-
-      const file = await convertToFile(
-        firstOutputUri(completedPrediction.output, this.model),
-        { filePrefix: "flux-pro-ultra", fileType: "image/jpeg" },
       );
 
       return {
@@ -263,14 +154,19 @@ class LabsBackgroundRemoverHandler
  * only for the *look* of the reference; the constant thumbnail-composition
  * rules are appended by the caller, where they cannot be forgotten.
  *
- * "Do not describe the subject" is load-bearing: without it the preset carries
- * the reference image's content, and every future generation inherits it.
+ * "Do not describe the subject" is load-bearing, and more so now that the
+ * reference image itself is attached at generation time: with the subject
+ * described here too, it would bleed into the output through both the picture
+ * and the prose. What widened instead is the *rendering* detail — framing,
+ * edges, and type treatment — since that is what the prose is for.
  */
 const STYLE_ANALYSIS_QUESTION =
   "Describe the visual style of this image so it can be reproduced on a " +
   "completely different subject. Cover: the rendering technique, the colour " +
   "palette with specific colours, the lighting, the texture and level of " +
-  "detail, and the contrast. Write one dense paragraph of visual descriptors. " +
+  "detail, the contrast, how edges and outlines are treated, how the frame is " +
+  "composed and how depth is suggested, and — if any text appears — how that " +
+  "text is styled. Write one dense paragraph of visual descriptors. " +
   "Do NOT describe the subject or what is happening in the image.";
 
 class JanusProStyleHandler
@@ -338,8 +234,6 @@ export class ReplicateProvider implements AgentProvider {
 
   constructor() {
     this.registerHandler(new Seedream5LiteHandler());
-    this.registerHandler(new FluxKontextProHandler());
-    this.registerHandler(new Flux11ProUltraHandler());
     this.registerHandler(new LabsBackgroundRemoverHandler());
     this.registerHandler(new JanusProStyleHandler());
   }

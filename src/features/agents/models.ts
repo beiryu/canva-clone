@@ -77,34 +77,6 @@ const productionModels: [AnyModel, ModelConfig][] = [
     },
   ],
   [
-    "flux-kontext-pro",
-    {
-      provider: "replicate",
-      name: "Flux Kontext Pro",
-      description: "Best for turning your canvas sketch into an image",
-      capabilities: ["image-generation"],
-      // No quality param on this model.
-      params: {
-        aspectRatio: ALL_ASPECT_RATIOS,
-        supportsImageInput: true,
-      },
-    },
-  ],
-  [
-    "flux-1.1-pro-ultra",
-    {
-      provider: "replicate",
-      name: "Flux Pro Ultra",
-      description: "Highest detail, looser sketch guidance",
-      capabilities: ["image-generation"],
-      // No quality param on this model.
-      params: {
-        aspectRatio: ALL_ASPECT_RATIOS,
-        supportsImageInput: true,
-      },
-    },
-  ],
-  [
     "gpt-5.4-mini",
     {
       provider: "openai",

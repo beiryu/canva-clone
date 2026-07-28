@@ -61,28 +61,6 @@ type FormAction =
  */
 const AUTO_PROMPT_MAX_EDGE = 512;
 
-/** Fabric types whose `text` is a headline the user typed, not a shape name. */
-const TEXT_OBJECT_TYPES = ["textbox", "text", "i-text"];
-
-/**
- * Headlines already on the canvas, in stacking order.
- *
- * Read from the fabric objects rather than transcribed from the snapshot: that
- * capture is downscaled to AUTO_PROMPT_MAX_EDGE, where Vietnamese diacritics
- * are the first thing to go. Structural cast instead of a `fabric.Textbox` one
- * so this file does not pull in the fabric import just for a type.
- */
-const readCanvasText = (editor: Editor | undefined): string[] => {
-  const lines = (editor?.canvas?.getObjects() ?? [])
-    .filter((object) => TEXT_OBJECT_TYPES.includes(object.type ?? ""))
-    .map((object) => (object as unknown as { text?: string }).text?.trim())
-    .filter((text): text is string => Boolean(text));
-
-  // A duplicated headline would be quoted twice and read as two separate
-  // strings to render.
-  return Array.from(new Set(lines));
-};
-
 const reducer = (state: GenerateState, action: FormAction): GenerateState => {
   switch (action.type) {
     case "UPDATE_FORM":
@@ -204,9 +182,10 @@ export const GenerateSidebar = ({
           // Whatever is already typed becomes topic context rather than being
           // replaced blindly.
           prompt: formData.prompt || undefined,
-          // Sent separately from the snapshot so the written prompt can quote
-          // the headline exactly instead of describing a gap for it.
-          canvasText: readCanvasText(editor),
+          // The id is what the server resolves guidance from; the name is only
+          // a fallback label for built-in styles, which have no database row.
+          style: selectedStyle.id,
+          styleName: selectedStyle.name,
         },
         {
           onSuccess: ({ data }) => {
@@ -221,7 +200,9 @@ export const GenerateSidebar = ({
     } catch (error) {
       console.error("Error writing auto prompt:", error);
     }
-  }, [editor, formData.prompt, autoPrompt]);
+    // selectedStyle is a real dependency, not decoration: omit it and switching
+    // style then hitting Auto Prompt sends the previously selected one.
+  }, [editor, formData.prompt, autoPrompt, selectedStyle]);
 
   const handleGenerate = useCallback(async () => {
     if (!editor) {

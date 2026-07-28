@@ -11,8 +11,6 @@
 export const IMAGE_GENERATION_MODELS = [
   "gpt-image-2",
   "seedream-5-lite",
-  "flux-kontext-pro",
-  "flux-1.1-pro-ultra",
 ] as const;
 
 export const TEXT_GENERATION_MODELS = ["gpt-5.4-mini"] as const;

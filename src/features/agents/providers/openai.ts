@@ -15,7 +15,7 @@ import {
   TextGenerationHandler,
   TextGenerationResult,
 } from "../types";
-import { buildImagePrompt } from "../utils";
+import { buildImagePrompt, orderInputImages } from "../utils";
 
 const GPT_IMAGE_MODEL = "gpt-image-2";
 
@@ -48,7 +48,15 @@ class GPTImage2Handler
   async generateImage(
     options: ImageGenerationOptions,
   ): Promise<ImageGenerationResult> {
-    const { prompt, settings, canvasImage, style, styleInstruction } = options;
+    const {
+      prompt,
+      settings,
+      canvasImage,
+      style,
+      styleInstruction,
+      styleReferenceImage,
+      styleReferenceMimeType,
+    } = options;
 
     const {
       aspectRatio = "1:1",
@@ -61,31 +69,53 @@ class GPTImage2Handler
 
       const size = this.mapAspectRatioToSize(aspectRatio);
 
+      const inputImages = orderInputImages({ canvasImage, styleReferenceImage });
+
       const composedPrompt = buildImagePrompt({
         prompt,
         style,
         styleInstruction,
         strictness,
         withImageGuidance: Boolean(canvasImage),
+        withStyleReference: Boolean(styleReferenceImage),
       });
 
+      // Roles rather than a boolean: when a generation comes back wearing the
+      // style reference's subject, this is the line that says which images went
+      // in and in what order.
       console.log("Generating image with GPT Image 2", {
         size,
         quality,
-        withSketch: Boolean(canvasImage),
+        inputImages: inputImages.map((image) => image.role),
       });
 
-      // With a sketch this is an edit, not a generation. `ai.ts` hands over a
-      // signed Supabase URL, so it is pulled back down into a File — the edits
-      // endpoint takes bytes, not a URL. That extra hop keeps the route
-      // provider-agnostic instead of special-casing OpenAI upstream.
-      const response = canvasImage
+      // Any input image makes this an edit rather than a generation. `ai.ts`
+      // hands over signed Supabase URLs, so they are pulled back down into
+      // Files — the edits endpoint takes bytes, not URLs. That extra hop keeps
+      // the route provider-agnostic instead of special-casing OpenAI upstream.
+      //
+      // `size` is honoured on the edit endpoint too, so a reference image with
+      // an odd aspect ratio does not drag the output away from the requested
+      // one.
+      const response = inputImages.length
         ? await openai.images.edit({
             model: GPT_IMAGE_MODEL,
-            image: await convertToFile(canvasImage, {
-              filePrefix: "canvas",
-              fileType: "image/png",
-            }),
+            image: await Promise.all(
+              inputImages.map((image) =>
+                convertToFile(image.uri, {
+                  filePrefix:
+                    image.role === "sketch" ? "canvas" : "style-reference",
+                  // convertToFile's http branch stamps whatever type it is
+                  // handed and ignores the response header, so this has to be
+                  // the object's real type. The canvas is always a PNG we
+                  // produced; the reference's comes from its stored extension.
+                  fileType:
+                    image.role === "sketch"
+                      ? "image/png"
+                      : (styleReferenceMimeType ?? "image/png"),
+                }),
+              ),
+            ),
             prompt: composedPrompt,
             size,
             quality: this.mapQuality(quality),
@@ -138,23 +168,31 @@ class GPTImage2Handler
 
 const AUTO_PROMPT_MODEL = "gpt-5.4-mini";
 
+/**
+ * Deliberately thin. This used to prescribe the thumbnail — hero subject, high
+ * contrast, and "deliberate negative space for a headline" — and that last
+ * clause is why generated thumbnails came back wordless: it is an instruction
+ * to leave the headline out, so the model dutifully left it out even when the
+ * canvas had text on it. Describing what is there beats dictating a layout;
+ * the composition is the model's call now.
+ */
 const AUTO_PROMPT_SYSTEM =
   "You write prompts for AI image generators that produce high-performing " +
   "YouTube thumbnails. Study the user's canvas and write ONE image-generation " +
-  "prompt that turns it into a click-worthy thumbnail: clear hero subject, " +
-  "high contrast, readable when small.\n" +
-  "Headline rules:\n" +
-  "- When headline text is supplied, the prompt MUST tell the image model to " +
-  "render it. Reproduce each headline inside double quotes exactly as given - " +
-  "same characters, same accents and diacritics, same capitalization - and " +
-  "state that it has to be spelled exactly as written. Then describe its " +
-  "placement, size, weight, color and contrast against the background. Never " +
-  "translate, shorten, rephrase or re-case a headline, and never ask for empty " +
-  "space where that headline goes.\n" +
-  "- When no headline text is supplied, do not invent one: ask instead for " +
-  "deliberate clean negative space where a headline can be added later.\n" +
-  "Reply with the prompt only - no preamble, no markdown, and no quotes " +
-  "wrapped around the prompt as a whole.";
+  "prompt for the thumbnail it is meant to become. Describe what is actually " +
+  "on the canvas, text included, and judge the rest yourself. A visual style " +
+  "is applied separately after your prompt, so describe the subject and the " +
+  "scene and leave the rendering style out. Reply with the prompt only - no " +
+  "preamble, no markdown.";
+
+/**
+ * Style guidance is one dense paragraph plus the fixed composition rules
+ * appended in the style-presets route — 250-350 tokens against a ~226-token
+ * baseline for the whole request. The writer only needs the palette and
+ * technique descriptors at the head of it to avoid contradicting the style, so
+ * the tail is dropped rather than doubling the input for a weaker signal.
+ */
+const STYLE_CONTEXT_MAX_CHARS = 600;
 
 /**
  * Turns the current canvas into a thumbnail prompt.
@@ -172,35 +210,26 @@ class GPT54MiniAutoPromptHandler
   }
 
   async autoPrompt(options: AutoPromptOptions): Promise<TextGenerationResult> {
-    const { canvasImage, context, canvasText } = options;
+    const { canvasImage, context, styleName, styleInstruction } = options;
 
     try {
       const openai = getOpenAIClient();
 
       const trimmedContext = context?.trim();
-      const headlines = (canvasText ?? [])
-        .map((line) => line.trim())
-        .filter(Boolean);
+      const trimmedInstruction = styleInstruction?.trim();
 
-      const sections: string[] = [];
+      const styleContext = trimmedInstruction
+        ? `Style applied afterwards${styleName ? ` (${styleName})` : ""}: ` +
+          trimmedInstruction.slice(0, STYLE_CONTEXT_MAX_CHARS)
+        : styleName
+          ? `Style applied afterwards: ${styleName}`
+          : null;
 
-      if (trimmedContext) {
-        sections.push(`Video topic / notes: ${trimmedContext}`);
-      }
-
-      // Numbered and quoted so the model has an unambiguous span to copy. It is
-      // told these are authoritative because the same strings are also visible
-      // (blurrily) in the snapshot, and the transcription it would make from
-      // the pixels must lose to the exact one.
-      if (headlines.length) {
-        sections.push(
-          "Headline text to render, authoritative and exact - copy it " +
-            "character for character, do not re-read it from the image:\n" +
-            headlines.map((line, i) => `${i + 1}. "${line}"`).join("\n"),
-        );
-      }
-
-      sections.push("Here is my canvas.");
+      const sections = [
+        trimmedContext ? `Video topic / notes: ${trimmedContext}` : null,
+        styleContext,
+        "Here is my canvas.",
+      ].filter(Boolean);
 
       const response = await openai.chat.completions.create({
         model: AUTO_PROMPT_MODEL,
@@ -211,7 +240,7 @@ class GPT54MiniAutoPromptHandler
             content: [
               {
                 type: "text",
-                // The topic goes before the image: tested, it steers the result
+                // The text goes before the image: tested, it steers the result
                 // without overriding what is actually drawn.
                 text: sections.join("\n\n"),
               },

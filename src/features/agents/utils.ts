@@ -52,9 +52,8 @@ export const createStyleInstruction = (style: string): string => {
 };
 
 /**
- * Replicate returns either a bare URI string (flux-kontext-pro,
- * flux-1.1-pro-ultra, background-remover) or an array of URIs (seedream-5-lite).
- * Normalize to the first URI.
+ * Replicate returns either a bare URI string (background-remover) or an array
+ * of URIs (seedream-5-lite). Normalize to the first URI.
  */
 export const firstOutputUri = (output: unknown, model: string): string => {
   const value = Array.isArray(output) ? output[0] : output;
@@ -103,29 +102,33 @@ export const createSketchGuidanceInstruction = (
   return instructions;
 };
 
+export type InputImageRole = "sketch" | "style-reference";
+
+export interface InputImage {
+  role: InputImageRole;
+  uri: string;
+}
+
 /**
- * flux-1.1-pro-ultra blends its `image_prompt` with the text prompt via
- * `image_prompt_strength` (0-1, model default 0.1). Higher means the reference
- * image dominates.
+ * The single place that decides what order input images are attached in.
  *
- * These are deliberately lower than they might look right on paper: the
- * reference here is `editor.canvas.toDataURL()` — a mostly-flat workspace fill
- * with thin strokes on it, not a photo. Push "strict" up near 0.85 and ultra
- * faithfully reproduces that near-blank canvas, which makes the strictest
- * setting look the most broken. Tune from real output.
+ * `buildImagePrompt`'s [INPUT IMAGES] block numbers them from this same rule,
+ * so the two must not be derived independently — swapping the order here
+ * without the prompt would leave the prompt confidently describing the wrong
+ * image, and the model would copy the reference's subject into the output.
  */
-export const mapStrictnessToImageStrength = (
-  strictness: SketchGuidanceStrictness = "moderate",
-): number => {
-  switch (strictness) {
-    case "strict":
-      return 0.6;
-    case "moderate":
-      return 0.35;
-    case "loose":
-      return 0.15;
-  }
-};
+export const orderInputImages = ({
+  canvasImage,
+  styleReferenceImage,
+}: {
+  canvasImage?: string;
+  styleReferenceImage?: string;
+}): InputImage[] => [
+  ...(canvasImage ? [{ role: "sketch" as const, uri: canvasImage }] : []),
+  ...(styleReferenceImage
+    ? [{ role: "style-reference" as const, uri: styleReferenceImage }]
+    : []),
+];
 
 export interface ImagePromptOptions {
   prompt: string;
@@ -145,6 +148,13 @@ export interface ImagePromptOptions {
    * a strict blueprint".
    */
   withImageGuidance?: boolean;
+  /**
+   * True only when the style preset's reference image is actually attached.
+   * Two unlabelled images is the failure this exists for: the model cannot tell
+   * the layout sketch from the style reference and composites both, so the
+   * reference's subject shows up in the thumbnail.
+   */
+  withStyleReference?: boolean;
 }
 
 export const buildImagePrompt = ({
@@ -153,8 +163,23 @@ export const buildImagePrompt = ({
   styleInstruction,
   strictness = "moderate",
   withImageGuidance = false,
+  withStyleReference = false,
 }: ImagePromptOptions): string => {
   const blocks: string[] = [];
+
+  // States which image is which and nothing else — composition stays the
+  // model's call. Emitted only when a reference is attached, so sketch-only and
+  // text-only prompts are byte-identical to what they were before.
+  //
+  // Ordered first because createSketchGuidanceInstruction says "the provided
+  // sketch", which is ambiguous until the images have been numbered.
+  if (withStyleReference) {
+    blocks.push(
+      withImageGuidance
+        ? "[INPUT IMAGES] Image 1 is the sketch. Image 2 is a style reference — match its look, not its content."
+        : "[INPUT IMAGES] Image 1 is a style reference — match its look, not its content.",
+    );
+  }
 
   if (withImageGuidance) {
     blocks.push(

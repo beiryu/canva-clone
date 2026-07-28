@@ -43,6 +43,23 @@ export interface ImageGenerationOptions extends BaseGenerationOptions {
    * because preset text lives in the database rather than the built-in switch.
    */
   styleInstruction?: string;
+  /**
+   * Fetchable URI for the image the preset was built from, sent to the model as
+   * a second input alongside `canvasImage`. `styleInstruction` is that image
+   * compressed to a paragraph by a 7B vision model — lossy twice over — so the
+   * actual reference is what makes generations match the style.
+   *
+   * Undefined for built-in styles, for presets saved without a reference, and
+   * for models that take no image input at all.
+   */
+  styleReferenceImage?: string;
+  /**
+   * Real MIME of `styleReferenceImage`. Required rather than assumed: the http
+   * branch of `convertToFile` labels the blob with whatever type it is given
+   * and ignores the response header, so a wrong value here reaches OpenAI as
+   * mislabelled bytes.
+   */
+  styleReferenceMimeType?: string;
   settings: {
     aspectRatio?: ImageAspectRatio;
     quality?: ImageQuality;
@@ -58,14 +75,14 @@ export interface AutoPromptOptions extends BaseGenerationOptions {
   canvasImage: string;
   /** Whatever the user already typed, used as topic context. May be empty. */
   context?: string;
+  /** Display name of the selected style, built-in or user preset. */
+  styleName?: string;
   /**
-   * Verbatim contents of the canvas' text layers, read straight off the fabric
-   * objects rather than out of `canvasImage`. The snapshot is downscaled to
-   * 512px, at which point a headline is usually too soft to transcribe — and a
-   * half-read Vietnamese headline is worse than none, since the image model
-   * would then render the misreading.
+   * The [STYLE GUIDANCE] text that will be applied at generation time. Passed
+   * so the written prompt does not contradict it — without this the two are
+   * composed blind to each other and can ask for opposite renderings.
    */
-  canvasText?: string[];
+  styleInstruction?: string;
 }
 
 export interface RemoveBgOptions extends BaseGenerationOptions {

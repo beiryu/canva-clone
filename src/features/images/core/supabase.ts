@@ -99,6 +99,25 @@ export async function uploadRemoteImageToSupabase(
 }
 
 /**
+ * `uploadFileToSupabase` returns both `path` and `fullPath`, where `fullPath`
+ * is `${bucket}/${path}`. Columns that persist `fullPath` — `stylePresets
+ * .referencePath` is one — must have the bucket segment stripped before the
+ * value reaches `getSignedUrl`, which scopes to a bucket already. Skipping this
+ * signs a path that does not exist and fails with "Object not found".
+ *
+ * Guarded with `startsWith` rather than an unconditional slice so it stays
+ * correct if a row ever holds a bare `path`.
+ */
+export function storagePathFromFullPath(
+  fullPath: string,
+  bucketName: string = IMAGES_BUCKET_NAME,
+): string {
+  return fullPath.startsWith(`${bucketName}/`)
+    ? fullPath.slice(bucketName.length + 1)
+    : fullPath;
+}
+
+/**
  * Generate a signed URL for a file in Supabase storage
  * @param path - The full path of the file in storage
  * @param expiresIn - Number of minutes until expiration
