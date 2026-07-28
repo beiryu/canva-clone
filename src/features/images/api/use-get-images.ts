@@ -47,18 +47,42 @@ export const useGetUploadedImages = () => {
   return query;
 };
 
-// Combined hook to get both Unsplash and uploaded images. Loading/error state is
-// kept per source so a stock search never puts the uploads tab into a spinner.
+// Every image this user has generated, across all projects — distinct from
+// ["project-images", { projectId }], which the bottom gallery uses.
+export const useGetGeneratedImages = () => {
+  const query = useQuery({
+    queryKey: ["images", "generated"],
+    queryFn: async () => {
+      const response = await client.api.images.generated.$get();
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch generated images");
+      }
+
+      const { data } = await response.json();
+      return data;
+    },
+  });
+
+  return query;
+};
+
+// Combined hook for the sidebar's sources. Loading/error state is kept per
+// source so a stock search never puts the uploads tab into a spinner.
 export const useGetImages = (query?: string) => {
   const unsplashQuery = useGetUnsplashImages(query);
   const uploadedQuery = useGetUploadedImages();
+  const generatedQuery = useGetGeneratedImages();
 
   return {
     unsplashImages: unsplashQuery.data || [],
     uploadedImages: uploadedQuery.data || [],
+    generatedImages: generatedQuery.data || [],
     isLoadingStock: unsplashQuery.isLoading,
     isErrorStock: unsplashQuery.isError,
     isLoadingUploads: uploadedQuery.isLoading,
     isErrorUploads: uploadedQuery.isError,
+    isLoadingGenerated: generatedQuery.isLoading,
+    isErrorGenerated: generatedQuery.isError,
   };
 };

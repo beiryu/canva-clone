@@ -1,8 +1,13 @@
-import { IMAGE_ASPECT_RATIOS, IMAGE_QUALITIES } from "./model-ids";
+import {
+  IMAGE_ASPECT_RATIOS,
+  IMAGE_QUALITIES,
+  SEEDREAM_ASPECT_RATIOS,
+} from "./model-ids";
 import {
   BackgroundRemoverModel,
   ImageGenerationModel,
   ModelCapability,
+  StyleAnalysisModel,
   TextGenerationModel,
 } from "./types";
 
@@ -33,13 +38,44 @@ export interface ModelConfig {
 export type AnyModel =
   | ImageGenerationModel
   | TextGenerationModel
-  | BackgroundRemoverModel;
+  | BackgroundRemoverModel
+  | StyleAnalysisModel;
 
 const ALL_ASPECT_RATIOS = [...IMAGE_ASPECT_RATIOS];
 
 // Registry order drives the order of the model dropdown, so the default
-// (flux-kontext-pro) comes first.
+// (gpt-image-2) comes first.
 const productionModels: [AnyModel, ModelConfig][] = [
+  [
+    "gpt-image-2",
+    {
+      provider: "openai",
+      name: "GPT Image 2",
+      description: "Highest quality — supports every aspect ratio",
+      capabilities: ["image-generation"],
+      params: {
+        quality: [...IMAGE_QUALITIES],
+        // The only model here that covers all eleven ratios, because
+        // gpt-image-2 takes an explicit pixel size rather than a fixed enum.
+        aspectRatio: ALL_ASPECT_RATIOS,
+        supportsImageInput: true,
+      },
+    },
+  ],
+  [
+    "seedream-5-lite",
+    {
+      provider: "replicate",
+      name: "Seedream 5 Lite",
+      description: "Reasoning-aware generation and sketch editing",
+      capabilities: ["image-generation"],
+      // Resolution is fixed at 2K in the handler, so no quality knob.
+      params: {
+        aspectRatio: [...SEEDREAM_ASPECT_RATIOS],
+        supportsImageInput: true,
+      },
+    },
+  ],
   [
     "flux-kontext-pro",
     {
@@ -69,28 +105,14 @@ const productionModels: [AnyModel, ModelConfig][] = [
     },
   ],
   [
-    "flux-schnell",
+    "gpt-5.4-mini",
     {
-      provider: "replicate",
-      name: "Flux Schnell",
-      description: "Fastest, prompt only — ignores your sketch",
-      capabilities: ["image-generation"],
-      params: {
-        quality: [...IMAGE_QUALITIES],
-        aspectRatio: ALL_ASPECT_RATIOS,
-        supportsImageInput: false,
-      },
-    },
-  ],
-  [
-    "llama-3-70b-instruct",
-    {
-      provider: "replicate",
-      name: "Llama 3 70B Instruct",
-      description: "Prompt enhancement",
+      provider: "openai",
+      name: "GPT-5.4 mini",
+      description: "Reads the canvas and writes a thumbnail prompt",
       capabilities: ["text-generation"],
       params: {
-        maxTokens: 500,
+        maxTokens: 300,
       },
     },
   ],
@@ -101,6 +123,16 @@ const productionModels: [AnyModel, ModelConfig][] = [
       name: "Background Remover",
       description: "Remove the background from an image",
       capabilities: ["background-remover"],
+      params: {},
+    },
+  ],
+  [
+    "janus-pro-7b",
+    {
+      provider: "replicate",
+      name: "Janus Pro 7B",
+      description: "Reads a reference image and writes a style instruction",
+      capabilities: ["style-analysis"],
       params: {},
     },
   ],

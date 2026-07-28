@@ -3,6 +3,41 @@ export const getImageUrl = (fullPath: string): string => {
 };
 
 /**
+ * Only the first few KB are examined. Testing `/^[A-Za-z0-9+/=]+$/` against a
+ * whole payload overflows V8's regex stack once the string reaches a few
+ * megabytes — which is exactly what an image model returns when it hands back
+ * base64 rather than a URL (a 2MP PNG is ~4MB of base64). The decode below is
+ * wrapped in try/catch, so a heuristic here is safe.
+ */
+const BASE64_SNIFF_LENGTH = 4096;
+
+const looksLikeBase64 = (value: string): boolean => {
+  if (value.length === 0 || value.length % 4 !== 0) return false;
+
+  return /^[A-Za-z0-9+/=]+$/.test(value.slice(0, BASE64_SNIFF_LENGTH));
+};
+
+/**
+ * Buffer decodes in native code; the charCodeAt loop it replaces ran once per
+ * byte (millions of iterations per image). The loop is kept as a fallback for
+ * any non-Node runtime.
+ */
+const decodeBase64 = (value: string): Uint8Array => {
+  if (typeof Buffer !== "undefined") {
+    return new Uint8Array(Buffer.from(value, "base64"));
+  }
+
+  const byteString = atob(value);
+  const bytes = new Uint8Array(byteString.length);
+
+  for (let i = 0; i < byteString.length; i++) {
+    bytes[i] = byteString.charCodeAt(i);
+  }
+
+  return bytes;
+};
+
+/**
  * Converts various image outputs (URL, base64, blob) to a File object
  * @param imageData - The image data (URL string, base64 string, Blob)
  * @param options - Additional options for the file creation
@@ -57,33 +92,19 @@ export async function convertToFile(
       const fileExt = contentType.split("/")[1] || "webp";
       const finalFileName = `${filePrefix}_${Date.now()}.${fileExt}`;
 
-      const byteString = atob(dataPart);
-      const arrayBuffer = new ArrayBuffer(byteString.length);
-      const uint8Array = new Uint8Array(arrayBuffer);
-
-      for (let i = 0; i < byteString.length; i++) {
-        uint8Array[i] = byteString.charCodeAt(i);
-      }
-
-      const blob = new Blob([arrayBuffer], { type: contentType });
+      const blob = new Blob([decodeBase64(dataPart)], { type: contentType });
       return new File([blob], finalFileName, { type: contentType });
     }
 
-    case /^[A-Za-z0-9+/=]+$/.test(imageData.trim()): {
+    case looksLikeBase64(imageData.trim()): {
       try {
         const contentType = fileType;
         const fileExt = contentType.split("/")[1] || "webp";
         const finalFileName = `${filePrefix}_${Date.now()}.${fileExt}`;
 
-        const byteString = atob(imageData.trim());
-        const arrayBuffer = new ArrayBuffer(byteString.length);
-        const uint8Array = new Uint8Array(arrayBuffer);
-
-        for (let i = 0; i < byteString.length; i++) {
-          uint8Array[i] = byteString.charCodeAt(i);
-        }
-
-        const blob = new Blob([arrayBuffer], { type: contentType });
+        const blob = new Blob([decodeBase64(imageData.trim())], {
+          type: contentType,
+        });
         return new File([blob], finalFileName, { type: contentType });
       } catch (error) {
         console.error("Error converting base64 string to file:", error);

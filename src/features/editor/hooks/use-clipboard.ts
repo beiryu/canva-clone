@@ -1,6 +1,8 @@
 import { fabric } from "fabric";
 import { useCallback, useRef } from "react";
 
+import { JSON_KEYS } from "@/features/editor/types";
+
 interface UseClipboardProps {
   canvas: fabric.Canvas | null;
 }
@@ -8,10 +10,14 @@ interface UseClipboardProps {
 export const useClipboard = ({ canvas }: UseClipboardProps) => {
   const clipboard = useRef<any>(null);
 
+  // clone() round-trips through toObject(propertiesToInclude), so without
+  // JSON_KEYS every custom prop is dropped: a pasted textbox lost its text
+  // effect (and with it the render path keyed off `textEffect`), and paste has
+  // always silently dropped `name`, `linkData` and `extension` too.
   const copy = useCallback(() => {
     canvas?.getActiveObject()?.clone((cloned: any) => {
       clipboard.current = cloned;
-    });
+    }, JSON_KEYS);
   }, [canvas]);
 
   const paste = useCallback(() => {
@@ -39,7 +45,7 @@ export const useClipboard = ({ canvas }: UseClipboardProps) => {
       clipboard.current.left += 10;
       canvas?.setActiveObject(clonedObj);
       canvas?.requestRenderAll();
-    });
+    }, JSON_KEYS);
   }, [canvas]);
 
   return { copy, paste };

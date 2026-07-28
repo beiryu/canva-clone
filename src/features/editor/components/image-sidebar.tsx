@@ -43,10 +43,13 @@ export const ImageSidebar = ({
   const {
     unsplashImages,
     uploadedImages,
+    generatedImages,
     isLoadingStock,
     isErrorStock,
     isLoadingUploads,
     isErrorUploads,
+    isLoadingGenerated,
+    isErrorGenerated,
   } = useGetImages(search);
 
   const {
@@ -159,6 +162,9 @@ export const ImageSidebar = ({
               </TabsTrigger>
               <TabsTrigger value="google" className="flex-1">
                 Google
+              </TabsTrigger>
+              <TabsTrigger value="generated" className="flex-1">
+                Generated
               </TabsTrigger>
             </TabsList>
           </div>
@@ -327,6 +333,47 @@ export const ImageSidebar = ({
                     </Link>
                   </button>
                 ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="generated" className="p-4 pt-2">
+            {isLoadingGenerated ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader className="size-4 text-muted-foreground animate-spin" />
+              </div>
+            ) : isErrorGenerated ? (
+              <div className="flex flex-col gap-y-4 items-center justify-center py-8">
+                <AlertTriangle className="size-4 text-muted-foreground" />
+                <p className="text-muted-foreground text-xs">
+                  Failed to fetch images
+                </p>
+              </div>
+            ) : generatedImages && generatedImages.length > 0 ? (
+              <div className="grid grid-cols-2 gap-4">
+                {generatedImages.map((image) => (
+                  <button
+                    onClick={() =>
+                      editor?.addImage(getImageUrl(image.fullPath))
+                    }
+                    key={image.id}
+                    className="relative w-full h-[100px] group hover:opacity-75 transition bg-muted rounded-sm overflow-hidden border"
+                  >
+                    <Image
+                      src={getImageUrl(image.fullPath)}
+                      alt={image.prompt || "Generated Image"}
+                      className="object-cover w-full h-full"
+                      loading="lazy"
+                      fill
+                    />
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8">
+                <p className="text-muted-foreground text-sm mb-4">
+                  No generated images yet
+                </p>
               </div>
             )}
           </TabsContent>

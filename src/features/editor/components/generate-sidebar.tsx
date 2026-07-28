@@ -25,7 +25,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useVisualStyle } from "@/features/editor/store/use-visual-style";
 import { useAgentGenerateImage } from "@/features/ai/api/use-agent-generate-image";
-import { useAgentEnhancePrompt } from "@/features/ai/api/use-agent-enhance-prompt";
+import { useAutoPrompt } from "@/features/ai/api/use-auto-prompt";
 import { DEFAULT_IMAGE_MODEL } from "@/features/agents/model-ids";
 import { modelRegistry } from "@/features/agents/models";
 import {
@@ -53,6 +53,35 @@ type FormAction =
       type: "PATCH_FORM";
       patch: Partial<GenerateState["formData"]>;
     };
+
+/**
+ * Longest edge, in px, of the canvas snapshot sent to the auto-prompt model.
+ * Measured: 512px costs 226 input tokens vs 408 at 768px, with no drop in
+ * prompt quality.
+ */
+const AUTO_PROMPT_MAX_EDGE = 512;
+
+/** Fabric types whose `text` is a headline the user typed, not a shape name. */
+const TEXT_OBJECT_TYPES = ["textbox", "text", "i-text"];
+
+/**
+ * Headlines already on the canvas, in stacking order.
+ *
+ * Read from the fabric objects rather than transcribed from the snapshot: that
+ * capture is downscaled to AUTO_PROMPT_MAX_EDGE, where Vietnamese diacritics
+ * are the first thing to go. Structural cast instead of a `fabric.Textbox` one
+ * so this file does not pull in the fabric import just for a type.
+ */
+const readCanvasText = (editor: Editor | undefined): string[] => {
+  const lines = (editor?.canvas?.getObjects() ?? [])
+    .filter((object) => TEXT_OBJECT_TYPES.includes(object.type ?? ""))
+    .map((object) => (object as unknown as { text?: string }).text?.trim())
+    .filter((text): text is string => Boolean(text));
+
+  // A duplicated headline would be quoted twice and read as two separate
+  // strings to render.
+  return Array.from(new Set(lines));
+};
 
 const reducer = (state: GenerateState, action: FormAction): GenerateState => {
   switch (action.type) {
@@ -92,7 +121,7 @@ export const GenerateSidebar = ({
   const { formData } = state;
 
   const agentGenerateImage = useAgentGenerateImage();
-  const agentEnhancePrompt = useAgentEnhancePrompt();
+  const autoPrompt = useAutoPrompt();
 
   const getModelParams = useCallback(() => {
     return modelRegistry.get(model)?.params ?? {};
@@ -130,37 +159,69 @@ export const GenerateSidebar = ({
     }
   };
 
-  const handleEnhancePrompt = useCallback(async () => {
-    if (!formData.prompt || formData.prompt.trim().length === 0) {
-      toast.error("Please enter a prompt first");
+  const handleAutoPrompt = useCallback(async () => {
+    if (!editor) {
+      toast.error("Editor not available");
       return;
     }
 
-    if (formData.prompt.length > 1000) {
-      toast.error("Prompt is too long. Please keep it under 1000 characters");
+    // Same emptiness test handleGenerate uses — "clip" is the workspace rect,
+    // so a canvas holding only that has nothing drawn on it. Sending it would
+    // just bill a request to describe a blank rectangle.
+    const hasSketch = (editor.canvas?.getObjects() ?? []).some(
+      (object) => object.name !== "clip",
+    );
+
+    if (!hasSketch) {
+      toast.error("Draw something on the canvas first");
+      return;
+    }
+
+    // A downscaled JPEG, not the full-res PNG handleGenerate sends: at 768px
+    // the model cost 1.8x the input tokens for no measurable gain in prompt
+    // quality. This capture is throwaway input, never persisted.
+    const longestEdge = Math.max(
+      editor.canvas?.getWidth() ?? AUTO_PROMPT_MAX_EDGE,
+      editor.canvas?.getHeight() ?? AUTO_PROMPT_MAX_EDGE,
+    );
+
+    const canvasImage = editor.canvas?.toDataURL({
+      format: "jpeg",
+      quality: 0.8,
+      multiplier: Math.min(1, AUTO_PROMPT_MAX_EDGE / longestEdge),
+    });
+
+    if (!canvasImage) {
+      toast.error("Could not read the canvas");
       return;
     }
 
     try {
-      await agentEnhancePrompt.mutateAsync(
+      await autoPrompt.mutateAsync(
         {
           // Model choice is the server's default.
-          prompt: formData.prompt,
+          canvasImage,
+          // Whatever is already typed becomes topic context rather than being
+          // replaced blindly.
+          prompt: formData.prompt || undefined,
+          // Sent separately from the snapshot so the written prompt can quote
+          // the headline exactly instead of describing a gap for it.
+          canvasText: readCanvasText(editor),
         },
         {
           onSuccess: ({ data }) => {
             handleFormChange("prompt", data.text);
-            toast.success("Prompt enhanced successfully");
+            toast.success("Prompt written from your canvas");
           },
           onError: () => {
-            toast.error("Failed to enhance prompt");
+            toast.error("Failed to write a prompt");
           },
         },
       );
     } catch (error) {
-      console.error("Error enhancing prompt:", error);
+      console.error("Error writing auto prompt:", error);
     }
-  }, [formData.prompt, agentEnhancePrompt]);
+  }, [editor, formData.prompt, autoPrompt]);
 
   const handleGenerate = useCallback(async () => {
     if (!editor) {
@@ -245,18 +306,19 @@ export const GenerateSidebar = ({
                   Prompt
                 </Label>
                 <Button
-                  onClick={handleEnhancePrompt}
+                  onClick={handleAutoPrompt}
                   variant="outline"
                   size="sm"
                   className="flex items-center gap-1 h-8 text-xs text-primary"
-                  disabled={agentEnhancePrompt.isPending}
+                  disabled={autoPrompt.isPending}
+                  title="Write a thumbnail prompt from what's on the canvas"
                 >
-                  {agentEnhancePrompt.isPending ? (
+                  {autoPrompt.isPending ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
                   ) : (
                     <Sparkles className="h-3.5 w-3.5 mr-1" />
                   )}
-                  <span>Enhance Prompt</span>
+                  <span>Auto Prompt</span>
                 </Button>
               </div>
               <Textarea
@@ -451,7 +513,9 @@ export const GenerateSidebar = ({
             size={"lg"}
             effect="gooeyLeft"
             onClick={handleGenerate}
-            disabled={agentGenerateImage.isPending}
+            // The prompt now starts empty, so guard the blank case here rather
+            // than letting the server's min(1) come back as a generic 400.
+            disabled={agentGenerateImage.isPending || !formData.prompt.trim()}
           >
             {agentGenerateImage.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />

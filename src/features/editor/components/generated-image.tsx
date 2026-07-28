@@ -40,8 +40,8 @@ export const GeneratedImage = ({ projectId }: GeneratedImageProps) => {
   }
 
   return (
-    <main className="bg-black text-white p-4 md:p-8 h-full">
-      <div className="max-w-6xl mx-auto">
+    <main className="bg-black text-white p-4 md:p-6 h-full">
+      <div className="max-w-[1600px] mx-auto">
         <ImageGallery images={images} />
       </div>
     </main>

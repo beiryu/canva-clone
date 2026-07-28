@@ -1,8 +1,9 @@
 import { modelRegistry } from "../models";
+import { getOpenAIProvider } from "../providers/openai";
 import { getReplicateProvider } from "../providers/replicate";
 import {
   AgentProvider,
-  EnhancePromptOptions,
+  AutoPromptOptions,
   TextGenerationHandler,
   TextGenerationResult,
 } from "../types";
@@ -12,11 +13,12 @@ export class TextAgent {
 
   constructor() {
     this.providers.set("replicate", getReplicateProvider());
+    // The auto-prompt model is a vision model on OpenAI. Without this entry the
+    // registry resolves it to "Provider openai not configured".
+    this.providers.set("openai", getOpenAIProvider());
   }
 
-  async enhancePrompt(
-    options: EnhancePromptOptions,
-  ): Promise<TextGenerationResult> {
+  async autoPrompt(options: AutoPromptOptions): Promise<TextGenerationResult> {
     const modelConfig = modelRegistry.get(options.model);
 
     if (!modelConfig) {
@@ -38,10 +40,10 @@ export class TextAgent {
         );
       }
 
-      return modelHandler.enhancePrompt(options);
+      return modelHandler.autoPrompt(options);
     } catch (error) {
       console.error(
-        `Error enhancing prompt with model ${options.model}:`,
+        `Error generating auto prompt with model ${options.model}:`,
         error,
       );
       throw error;

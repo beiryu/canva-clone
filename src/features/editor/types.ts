@@ -18,6 +18,12 @@ export const JSON_KEYS = [
   "editable",
   "extensionType",
   "extension",
+  // Text effects live on the object as custom props. fabric only serialises
+  // props it knows about plus whatever is listed here, so omitting these loses
+  // every effect on save, on reload, and on every undo (use-history.ts
+  // serialises with this same list).
+  "textEffect",
+  "textEffectOptions",
 ];
 
 export const filters = [
@@ -70,6 +76,7 @@ export const fonts = [
 export const selectionDependentPanels: ActivePanel[] = [
   "fill",
   "font",
+  "effects",
   "filter",
   "opacity",
   "stroke-color",
@@ -112,11 +119,115 @@ export type ActivePanel =
   | "stroke-color"
   | "stroke-width"
   | "font"
+  | "effects"
   | "opacity"
   | "filter";
 
 /** How the canvas reacts to the pointer. */
 export type CanvasMode = "select" | "draw" | "crop";
+
+export type TextEffect = "none" | "drop" | "echo" | "background";
+
+/**
+ * Every slider any effect can show. A single flat shape rather than a union per
+ * effect: the sidebar keeps values across effect switches, so flipping Drop →
+ * Echo → Drop does not silently reset the offset you just set.
+ *
+ * NONE of these is a pixel value. `direction` is degrees; everything else is a
+ * 0-100 percentage, matching the numbers in the UI. `offset` and `blur` are
+ * percentages OF THE FONT SIZE (see `offsetToXY` in fabric/text-effects.ts) so
+ * one value reads correctly on 12px body copy and on a 200px headline; absolute
+ * px would make 50 a 35px displacement on default 32px text, larger than the
+ * glyphs themselves. `transparency` is 100 = invisible, matching Canva.
+ */
+export interface TextEffectOptions {
+  offset: number;
+  direction: number;
+  blur: number;
+  roundness: number;
+  spread: number;
+  transparency: number;
+  color: string;
+}
+
+/**
+ * The shape used when nothing is known: the "none" fallback, and the base that
+ * `getActiveTextEffect` spreads under stored values so a project saved before a
+ * slider existed still yields a complete options object. Per-effect starting
+ * points live in TEXT_EFFECT_PRESETS.
+ */
+export const DEFAULT_TEXT_EFFECT_OPTIONS: TextEffectOptions = {
+  offset: 40,
+  direction: 45,
+  blur: 0,
+  roundness: 40,
+  spread: 55,
+  transparency: 40,
+  color: "#000000",
+};
+
+/**
+ * Starting values per effect. One flat set cannot serve all three: `blur: 0` is
+ * right for Echo and wrong for Drop, and opaque black is a sane shadow but an
+ * invisible background behind text that is itself TEXT_FILL_COLOR black.
+ */
+export const TEXT_EFFECT_PRESETS: Record<
+  Exclude<TextEffect, "none">,
+  TextEffectOptions
+> = {
+  // Blurred and semi-transparent, so it still reads as a shadow when it is the
+  // same colour as the glyphs — which it is by default.
+  drop: { ...DEFAULT_TEXT_EFFECT_OPTIONS, blur: 30, transparency: 55 },
+  // Echo is hard-edged by definition, so the copies must differ in value from
+  // the glyphs or the stack reads as a smear.
+  echo: { ...DEFAULT_TEXT_EFFECT_OPTIONS, blur: 0, transparency: 45 },
+  // Neither black (== TEXT_FILL_COLOR) nor white (== the workspace) is visible
+  // behind default text, so the box starts as an accent colour.
+  background: {
+    ...DEFAULT_TEXT_EFFECT_OPTIONS,
+    color: "#FFE066",
+    transparency: 0,
+  },
+};
+
+/** Which sliders each effect exposes, in display order. */
+export const TEXT_EFFECT_CONTROLS: Record<
+  Exclude<TextEffect, "none">,
+  (keyof TextEffectOptions)[]
+> = {
+  drop: ["offset", "direction", "blur", "transparency", "color"],
+  echo: ["offset", "direction", "transparency", "color"],
+  background: ["roundness", "spread", "transparency", "color"],
+};
+
+/** Colour is not a slider, so it lives in the labels map and nowhere else. */
+export type TextEffectSliderKey = Exclude<keyof TextEffectOptions, "color">;
+
+export const TEXT_EFFECT_CONTROL_LABELS: Record<
+  keyof TextEffectOptions,
+  string
+> = {
+  offset: "Offset",
+  direction: "Direction",
+  blur: "Blur",
+  roundness: "Roundness",
+  spread: "Spread",
+  transparency: "Transparency",
+  color: "Color",
+};
+
+/** The `%` / `°` suffix for a slider's readout — the units are not obvious. */
+export const TEXT_EFFECT_SLIDER_META: Record<
+  TextEffectSliderKey,
+  { min: number; max: number; step: number; unit: string }
+> = {
+  offset: { min: 0, max: 100, step: 1, unit: "%" },
+  direction: { min: 0, max: 360, step: 1, unit: "°" },
+  blur: { min: 0, max: 100, step: 1, unit: "%" },
+  roundness: { min: 0, max: 100, step: 1, unit: "%" },
+  spread: { min: 0, max: 100, step: 1, unit: "%" },
+  transparency: { min: 0, max: 100, step: 1, unit: "%" },
+};
 
 /**
  * A crop window, in SOURCE-BITMAP PIXELS — the same units as fabric's
@@ -131,6 +242,11 @@ export type CropRect = {
 };
 
 export const FILL_COLOR = "rgb(214, 255, 58, 1)";
+/**
+ * Text starts black rather than reusing FILL_COLOR — the shape fill is a bright
+ * accent colour that is nearly unreadable as body text on a light canvas.
+ */
+export const TEXT_FILL_COLOR = "#000000";
 export const STROKE_COLOR = "rgba(214, 255, 58, 1)";
 export const STROKE_WIDTH = 15;
 export const STROKE_DASH_ARRAY = [];
@@ -184,7 +300,7 @@ export const TEXT_OPTIONS = {
   type: "textbox",
   left: 100,
   top: 100,
-  fill: FILL_COLOR,
+  fill: TEXT_FILL_COLOR,
   fontSize: FONT_SIZE,
   fontFamily: FONT_FAMILY,
 };
@@ -270,6 +386,20 @@ export interface Editor {
   getActiveFontFamily: () => string;
   changeFontFamily: (value: string) => void;
   addText: (value: string, options?: ITextboxOptions) => void;
+  /**
+   * `commit: false` applies the effect without pushing an undo step — sliders
+   * fire on every tick, so one drag would otherwise bury ~50 entries in the
+   * history. Pass true (the default) on the final value.
+   */
+  changeTextEffect: (
+    effect: TextEffect,
+    options: TextEffectOptions,
+    commit?: boolean,
+  ) => void;
+  getActiveTextEffect: () => {
+    effect: TextEffect;
+    options: TextEffectOptions;
+  };
   getActiveOpacity: () => number;
   changeOpacity: (value: number) => void;
   flipHorizontal: () => void;
@@ -305,10 +435,11 @@ export interface GenerateState {
 
 export const INITIAL_GENERATE_STATE: GenerateState = {
   formData: {
-    prompt:
-      "Artistic background with multiple overlapping characters, in an abstract or semi-abstract style",
-    aspectRatio: "1:1",
-    quality: "medium",
+    prompt: "",
+    // 16:9 is the thumbnail ratio the product is built around, and every
+    // current image model supports it.
+    aspectRatio: "16:9",
+    quality: "low",
     strictness: "moderate",
   },
 };

@@ -19,6 +19,7 @@ import {
   FlipVertical,
   Crop,
   Check,
+  Sparkles,
 } from "lucide-react";
 
 import { isTextType } from "@/features/editor/utils";
@@ -261,6 +262,24 @@ export const Toolbar = ({
                 {properties.fontFamily}
               </div>
               <ChevronDown className="size-4 ml-2 shrink-0" />
+            </Button>
+          </Hint>
+        </div>
+      )}
+      {isText && (
+        <div className="flex items-center h-full justify-center">
+          <Hint label="Effects" side="bottom" sideOffset={5}>
+            <Button
+              onClick={() => onTogglePanel("effects")}
+              size="icon"
+              variant="ghost"
+              className={cn(
+                "w-auto px-2 text-sm",
+                activePanel === "effects" && "bg-muted",
+              )}
+            >
+              <Sparkles className="size-4 mr-2 shrink-0" />
+              Effects
             </Button>
           </Hint>
         </div>

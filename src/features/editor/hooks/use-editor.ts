@@ -19,7 +19,15 @@ import {
   FONT_SIZE,
   JSON_KEYS,
   CropRect,
+  TextEffect,
+  TextEffectOptions,
+  DEFAULT_TEXT_EFFECT_OPTIONS,
+  TEXT_EFFECT_PRESETS,
 } from "@/features/editor/types";
+import {
+  buildDropShadow,
+  installTextEffects,
+} from "@/features/editor/fabric/text-effects";
 import { useHistory } from "@/features/editor/hooks/use-history";
 import {
   createFilter,
@@ -34,6 +42,10 @@ import { useAutoResize } from "@/features/editor/hooks/use-auto-resize";
 import { useCanvasEvents } from "@/features/editor/hooks/use-canvas-events";
 import { useWindowEvents } from "@/features/editor/hooks/use-window-events";
 import { useLoadState } from "@/features/editor/hooks/use-load-state";
+
+// Patches fabric.Text's renderer so Echo and Background can draw behind the
+// glyphs. Idempotent, and a no-op for objects without an effect set.
+installTextEffects();
 
 const buildEditor = ({
   save,
@@ -204,9 +216,13 @@ const buildEditor = ({
 
           imageObject.filters = effect ? [effect] : [];
           imageObject.applyFilters();
-          canvas.renderAll();
         }
       });
+
+      canvas.renderAll();
+      // applyFilters() fires no "object:modified", so without this the filter is
+      // neither undoable nor persisted — it silently vanished on reload.
+      save();
     },
     // Takes the target object instead of reading getActiveObject(): background
     // removal runs for 5-30s, so the selection may have moved on by then.
@@ -291,11 +307,72 @@ const buildEditor = ({
     addText: (value, options) => {
       const object = new fabric.Textbox(value, {
         ...TEXT_OPTIONS,
-        fill: fillColor,
+        // TEXT_OPTIONS supplies black. The shared shape fill only wins once the
+        // user has actually moved the picker off the app default — otherwise
+        // every new textbox would come out in the lime accent colour.
+        ...(fillColor !== FILL_COLOR ? { fill: fillColor } : {}),
         ...options,
       });
 
       addToCanvas(object);
+    },
+    changeTextEffect: (effect, options, commit = true) => {
+      canvas.getActiveObjects().forEach((object) => {
+        if (!isTextType(object.type)) return;
+
+        // Offsets and blur are em-relative, so the shadow is built from this
+        // object's own font size: a multi-selection of 16px and 96px text gets
+        // proportionally matching shadows rather than identical pixel ones.
+        const fontSize = (object as fabric.Textbox).fontSize ?? FONT_SIZE;
+
+        object.set({
+          textEffect: effect,
+          // A copy per object, so a multi-selection does not end up with every
+          // object aliasing one shared options object.
+          textEffectOptions: { ...options },
+          // Drop is the only effect fabric renders itself. Clearing the shadow
+          // for every other effect is what makes the tiles mutually exclusive —
+          // otherwise switching Drop -> Background would leave the shadow on,
+          // and it would then apply to the background box too, since fabric
+          // draws shadow around the whole object.
+          shadow: effect === "drop" ? buildDropShadow(options, fontSize) : null,
+        } as Partial<fabric.Object>);
+      });
+
+      canvas.renderAll();
+      // A programmatic set() fires no "object:modified", so without this the
+      // effect is neither undoable nor persisted. `skip` still runs the save
+      // callback, so an in-progress drag persists without flooding the history.
+      save(!commit);
+    },
+    getActiveTextEffect: () => {
+      const selectedObject = selectedObjects[0];
+
+      const fallback = {
+        effect: "none" as TextEffect,
+        options: DEFAULT_TEXT_EFFECT_OPTIONS,
+      };
+
+      if (!selectedObject || !isTextType(selectedObject.type)) {
+        return fallback;
+      }
+
+      const effect = (selectedObject.get("textEffect" as never) ??
+        "none") as TextEffect;
+
+      if (effect === "none") return fallback;
+
+      return {
+        effect,
+        options: {
+          // The effect's own preset is the base rather than the generic
+          // defaults, so a project saved before a slider existed picks up a
+          // value that suits THIS effect instead of one that suits none of them.
+          ...TEXT_EFFECT_PRESETS[effect],
+          ...((selectedObject.get("textEffectOptions" as never) ??
+            {}) as Partial<TextEffectOptions>),
+        },
+      };
     },
     getActiveOpacity: () => {
       const selectedObject = selectedObjects[0];
@@ -313,6 +390,19 @@ const buildEditor = ({
         if (isTextType(object.type)) {
           // @ts-ignore
           object.set({ fontSize: value });
+
+          // A Drop shadow's offset and blur are derived from the font size, so
+          // it has to be rebuilt or it stays scaled to the old type. Echo and
+          // Background read fontSize at render time and need nothing here.
+          if (object.get("textEffect" as never) === "drop") {
+            const options = object.get(
+              "textEffectOptions" as never,
+            ) as TextEffectOptions | undefined;
+
+            if (options) {
+              object.set({ shadow: buildDropShadow(options, value) });
+            }
+          }
         }
       });
       canvas.renderAll();

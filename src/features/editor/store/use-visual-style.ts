@@ -43,6 +43,8 @@ export type VisualStyle = {
   id: string;
   name: string;
   image: string;
+  /** True for user-created presets, whose guidance lives in the database. */
+  isCustom?: boolean;
 };
 
 type VisualStyleState = {
@@ -50,6 +52,14 @@ type VisualStyleState = {
   setSelectedStyle: (style: VisualStyle) => void;
   isStyleDrawerOpen: boolean;
   setIsStyleDrawerOpen: (open: boolean) => void;
+  /**
+   * Drops a persisted custom preset that no longer exists. The store persists
+   * the whole style object, so a preset deleted on another device (or in an
+   * earlier session) would otherwise stay selected forever and generate images
+   * with no style guidance at all — silently, since the server resolves an
+   * unknown id to no instruction rather than erroring.
+   */
+  reconcileCustomStyles: (availableCustomIds: string[]) => void;
 };
 
 export const useVisualStyle = create<VisualStyleState>()(
@@ -59,6 +69,19 @@ export const useVisualStyle = create<VisualStyleState>()(
       setSelectedStyle: (style) => set({ selectedStyle: style }),
       isStyleDrawerOpen: false,
       setIsStyleDrawerOpen: (open) => set({ isStyleDrawerOpen: open }),
+      reconcileCustomStyles: (availableCustomIds) =>
+        set((state) => {
+          const { selectedStyle } = state;
+
+          if (
+            !selectedStyle?.isCustom ||
+            availableCustomIds.includes(selectedStyle.id)
+          ) {
+            return state;
+          }
+
+          return { ...state, selectedStyle: visualStyles[0] };
+        }),
     }),
     {
       name: "style-storage",

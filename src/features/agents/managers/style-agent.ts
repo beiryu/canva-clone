@@ -1,24 +1,22 @@
 import { modelRegistry } from "../models";
-import { getOpenAIProvider } from "../providers/openai";
 import { getReplicateProvider } from "../providers/replicate";
 import {
   AgentProvider,
-  ImageGenerationHandler,
-  ImageGenerationOptions,
-  ImageGenerationResult,
+  StyleAnalysisHandler,
+  StyleAnalysisOptions,
+  StyleAnalysisResult,
 } from "../types";
 
-export class ImageAgent {
+export class StyleAgent {
   private providers: Map<string, AgentProvider> = new Map();
 
   constructor() {
     this.providers.set("replicate", getReplicateProvider());
-    this.providers.set("openai", getOpenAIProvider());
   }
 
-  async generateImage(
-    options: ImageGenerationOptions,
-  ): Promise<ImageGenerationResult> {
+  async analyzeStyle(
+    options: StyleAnalysisOptions,
+  ): Promise<StyleAnalysisResult> {
     const modelConfig = modelRegistry.get(options.model);
 
     if (!modelConfig) {
@@ -34,29 +32,27 @@ export class ImageAgent {
     try {
       const modelHandler = provider.getModelHandler(options.model);
 
-      if (!this.isImageGenerationHandler(modelHandler)) {
+      if (!this.isStyleAnalysisHandler(modelHandler)) {
         throw new Error(
-          `Model ${options.model} does not support image generation`,
+          `Model ${options.model} does not support style analysis`,
         );
       }
 
-      return modelHandler.generateImage(options);
+      return modelHandler.analyzeStyle(options);
     } catch (error) {
       console.error(
-        `Error generating image with model ${options.model}:`,
+        `Error analyzing style with model ${options.model}:`,
         error,
       );
       throw error;
     }
   }
 
-  private isImageGenerationHandler(
-    handler: any,
-  ): handler is ImageGenerationHandler {
+  private isStyleAnalysisHandler(handler: any): handler is StyleAnalysisHandler {
     return (
       handler &&
       handler.capabilities &&
-      handler.capabilities.includes("image-generation")
+      handler.capabilities.includes("style-analysis")
     );
   }
 }

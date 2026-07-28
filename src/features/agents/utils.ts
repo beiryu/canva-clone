@@ -15,21 +15,10 @@ export const getModelsByCapability = (
   return models;
 };
 
-// Models that have been retired but still appear in older generatedImages rows.
-const LEGACY_MODEL_LABELS: Record<string, string> = {
-  "r/gpt-image-1": "GPT Image (retired)",
-  "o/gpt-image-1": "GPT Image (retired)",
-  "gpt-4.1-mini": "GPT-4.1 mini (retired)",
-};
-
 export const getModelDisplayName = (model?: string | null): string | null => {
   if (!model) return null;
 
-  return (
-    modelRegistry.get(model as AnyModel)?.name ??
-    LEGACY_MODEL_LABELS[model] ??
-    model
-  );
+  return modelRegistry.get(model as AnyModel)?.name ?? model;
 };
 
 export const createStyleInstruction = (style: string): string => {
@@ -64,7 +53,7 @@ export const createStyleInstruction = (style: string): string => {
 
 /**
  * Replicate returns either a bare URI string (flux-kontext-pro,
- * flux-1.1-pro-ultra, background-remover) or an array of URIs (flux-schnell).
+ * flux-1.1-pro-ultra, background-remover) or an array of URIs (seedream-5-lite).
  * Normalize to the first URI.
  */
 export const firstOutputUri = (output: unknown, model: string): string => {
@@ -141,6 +130,13 @@ export const mapStrictnessToImageStrength = (
 export interface ImagePromptOptions {
   prompt: string;
   style?: string;
+  /**
+   * Style guidance for a user-created preset, already resolved from the
+   * database. Takes precedence over `style` — preset ids are not in
+   * `createStyleInstruction`'s switch, which would silently yield "" and drop
+   * the [STYLE GUIDANCE] block entirely.
+   */
+  styleInstruction?: string;
   strictness?: SketchGuidanceStrictness;
   /**
    * True only when an image is actually being sent to the model. This is a
@@ -149,16 +145,14 @@ export interface ImagePromptOptions {
    * a strict blueprint".
    */
   withImageGuidance?: boolean;
-  /** Trailing hard constraints, e.g. "NO TEXT, ONLY IMAGE". */
-  suffix?: string;
 }
 
 export const buildImagePrompt = ({
   prompt,
   style,
+  styleInstruction,
   strictness = "moderate",
   withImageGuidance = false,
-  suffix,
 }: ImagePromptOptions): string => {
   const blocks: string[] = [];
 
@@ -168,14 +162,16 @@ export const buildImagePrompt = ({
     );
   }
 
+  // A resolved preset wins; otherwise fall back to the built-in switch.
   // createStyleInstruction returns "" for anything outside its switch, which
   // would otherwise emit a bare [STYLE GUIDANCE] label.
-  const styleInstruction = style ? createStyleInstruction(style) : "";
-  if (styleInstruction) {
-    blocks.push(`[STYLE GUIDANCE] ${styleInstruction}`);
+  const resolvedStyle =
+    styleInstruction?.trim() || (style ? createStyleInstruction(style) : "");
+  if (resolvedStyle) {
+    blocks.push(`[STYLE GUIDANCE] ${resolvedStyle}`);
   }
 
-  blocks.push(`[USER PROMPT] ${suffix ? `${prompt}, ${suffix}` : prompt}`);
+  blocks.push(`[USER PROMPT] ${prompt}`);
 
   return blocks.join("\n");
 };

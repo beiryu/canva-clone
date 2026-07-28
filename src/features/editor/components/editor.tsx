@@ -25,6 +25,7 @@ import { StrokeWidthSidebar } from "@/features/editor/components/stroke-width-si
 import { OpacitySidebar } from "@/features/editor/components/opacity-sidebar";
 import { TextSidebar } from "@/features/editor/components/text-sidebar";
 import { FontSidebar } from "@/features/editor/components/font-sidebar";
+import { EffectsSidebar } from "@/features/editor/components/effects-sidebar";
 import { ImageSidebar } from "@/features/editor/components/image-sidebar";
 import { FilterSidebar } from "@/features/editor/components/filter-sidebar";
 import { DrawSidebar } from "@/features/editor/components/draw-sidebar";
@@ -218,6 +219,11 @@ export const Editor = ({ initialData }: EditorProps) => {
           isOpen={activePanel === "font"}
           onClose={closePanel}
         />
+        <EffectsSidebar
+          editor={editor}
+          isOpen={activePanel === "effects"}
+          onClose={closePanel}
+        />
         <ImageSidebar
           editor={editor}
           isOpen={activePanel === "images"}
@@ -246,7 +252,7 @@ export const Editor = ({ initialData }: EditorProps) => {
         />
         <main className="bg-muted flex-1 overflow-auto relative flex flex-col">
           <ResizablePanelGroup direction="vertical" className="flex-1">
-            <ResizablePanel defaultSize={50} minSize={0}>
+            <ResizablePanel defaultSize={65} minSize={0}>
               <Toolbar
                 editor={editor}
                 activePanel={activePanel}
@@ -264,7 +270,7 @@ export const Editor = ({ initialData }: EditorProps) => {
               </div>
             </ResizablePanel>
             <ResizableHandle withHandle />
-            <ResizablePanel className="bg-black p-0" minSize={0}>
+            <ResizablePanel className="bg-black p-0" defaultSize={35} minSize={0}>
               <ScrollArea className="h-full w-full">
                 <GeneratedImage projectId={initialData.id} />
               </ScrollArea>

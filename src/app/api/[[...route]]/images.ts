@@ -6,7 +6,7 @@ import { z } from "zod";
 
 import { unsplash } from "@/lib/unsplash";
 import { searchGoogleImages, SerperImage } from "@/lib/serper";
-import { uploadedImages } from "@/db/schema";
+import { generatedImages, uploadedImages } from "@/db/schema";
 import { db } from "@/db/drizzle";
 import {
   IMAGES_BUCKET_NAME,
@@ -257,6 +257,24 @@ const app = new Hono()
       .from(uploadedImages)
       .where(eq(uploadedImages.userId, auth.token.id))
       .orderBy(desc(uploadedImages.createdAt));
+
+    return c.json({ data });
+  })
+  .get("/generated", verifyAuth(), async (c) => {
+    const auth = c.get("authUser");
+
+    if (!auth.token?.id) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    // Scoped to the user, not the project — the point of this list is reusing
+    // images generated in *other* projects. The bottom gallery covers the
+    // current project via ["project-images", { projectId }].
+    const data = await db
+      .select()
+      .from(generatedImages)
+      .where(eq(generatedImages.userId, auth.token.id))
+      .orderBy(desc(generatedImages.createdAt));
 
     return c.json({ data });
   })

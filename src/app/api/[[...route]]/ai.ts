@@ -1,12 +1,14 @@
 import { verifyAuth } from "@hono/auth-js";
 import { zValidator } from "@hono/zod-validator";
+import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
 import { db } from "@/db/drizzle";
-import { generatedImages, uploadedImages } from "@/db/schema";
+import { generatedImages, stylePresets, uploadedImages } from "@/db/schema";
 import { AgentManager } from "@/features/agents/managers";
 import {
+  BUILT_IN_STYLE_IDS,
   DEFAULT_TEXT_MODEL,
   IMAGE_ASPECT_RATIOS,
   IMAGE_GENERATION_MODELS,
@@ -144,6 +146,26 @@ const app = new Hono()
         );
       }
 
+      // A style id outside the built-in set is a user-created preset, whose
+      // guidance lives in the database. Without this lookup the id would fall
+      // through createStyleInstruction's switch, return "", and silently drop
+      // the [STYLE GUIDANCE] block — a preset that appears to do nothing.
+      let styleInstruction: string | undefined;
+
+      if (style && !BUILT_IN_STYLE_IDS.includes(style as never)) {
+        const [preset] = await db
+          .select({ instruction: stylePresets.instruction })
+          .from(stylePresets)
+          .where(
+            and(
+              eq(stylePresets.id, style),
+              eq(stylePresets.userId, auth.token.id),
+            ),
+          );
+
+        styleInstruction = preset?.instruction;
+      }
+
       const agentManager = new AgentManager();
 
       try {
@@ -151,6 +173,7 @@ const app = new Hono()
           model,
           prompt,
           style,
+          styleInstruction,
           canvasImage,
           settings: { aspectRatio, quality, strictness },
         });
@@ -190,7 +213,7 @@ const app = new Hono()
     },
   )
   .post(
-    "/agent-enhance-prompt",
+    "/agent-auto-prompt",
     verifyAuth(),
     zValidator(
       "json",
@@ -198,11 +221,17 @@ const app = new Hono()
         // Field-level default so the server owns the choice of text model and
         // the client does not hard-code one.
         model: textModelSchema.default(DEFAULT_TEXT_MODEL),
-        prompt: z.string().min(1),
+        // The canvas is the input; the typed prompt is only optional context,
+        // since the prompt box starts empty.
+        canvasImage: z.string().min(1),
+        prompt: z.string().optional(),
+        // Text layers read off the canvas. Capped because these ride in the
+        // prompt verbatim and a canvas can hold arbitrarily many text layers.
+        canvasText: z.array(z.string().max(500)).max(20).optional(),
       }),
     ),
     async (c) => {
-      const { model, prompt } = c.req.valid("json");
+      const { model, canvasImage, prompt, canvasText } = c.req.valid("json");
 
       const auth = c.get("authUser");
 
@@ -213,17 +242,22 @@ const app = new Hono()
       const agentManager = new AgentManager();
 
       try {
-        const result = await agentManager.enhancePrompt({
+        // Deliberately no Supabase upload here, unlike the generate route: the
+        // capture is a throwaway 512px JPEG and OpenAI accepts it inline, so
+        // persisting it would only add latency and storage litter.
+        const result = await agentManager.autoPrompt({
           model,
-          currentPrompt: prompt,
+          canvasImage,
+          context: prompt,
+          canvasText,
         });
 
         return c.json({
           data: result,
         });
       } catch (error) {
-        console.error("Prompt enhancement error:", error);
-        return c.json({ error: "Failed to enhance prompt" }, 500);
+        console.error("Auto prompt error:", error);
+        return c.json({ error: "Failed to write a prompt" }, 500);
       }
     },
   );

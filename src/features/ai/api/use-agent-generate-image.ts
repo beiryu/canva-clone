@@ -57,6 +57,10 @@ export const useAgentGenerateImage = () => {
         queryKey: ["project-images", { projectId: data.projectId }],
       });
 
+      // The Image sidebar's Generated tab is user-wide, so it has its own cache
+      // entry that the project-scoped key above does not touch.
+      queryClient.invalidateQueries({ queryKey: ["images", "generated"] });
+
       toast.success("Image generated successfully");
     },
     onError: (error, variables) => {
