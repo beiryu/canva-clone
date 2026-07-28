@@ -135,9 +135,13 @@ class LabsBackgroundRemoverHandler
 
       const completedPrediction = await replicate.wait(prediction);
 
+      // fileType is not optional in practice: convertToFile's http branch
+      // stamps whatever type it is handed and ignores the response header, so
+      // omitting it labelled these PNGs image/webp. This model exists to
+      // produce an alpha channel, which makes it the worst one to mislabel.
       const file = await convertToFile(
         firstOutputUri(completedPrediction.output, this.model),
-        { filePrefix: "background-remover" },
+        { filePrefix: "background-remover", fileType: "image/png" },
       );
 
       return { file };

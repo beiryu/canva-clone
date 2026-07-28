@@ -2,6 +2,27 @@ export const getImageUrl = (fullPath: string): string => {
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${fullPath}`;
 };
 
+/** What a stored object is named when its path carries no usable extension. */
+const FALLBACK_IMAGE_EXTENSION = "png";
+
+/**
+ * Extension of a stored object, for naming a download after it.
+ *
+ * A download's name has to follow the bytes rather than a hard-coded guess:
+ * naming a PNG `.webp` produces a file that previews fine in a browser (which
+ * sniffs the bytes) but that other tools reject outright.
+ *
+ * `split(".").pop()` returns the whole string when there is no dot at all, so
+ * the result is shape-checked rather than trusted.
+ */
+export const imageExtensionFromPath = (fullPath: string): string => {
+  const extension = fullPath.split(".").pop()?.toLowerCase() ?? "";
+
+  return /^[a-z0-9]{2,4}$/.test(extension)
+    ? extension
+    : FALLBACK_IMAGE_EXTENSION;
+};
+
 /**
  * Only the first few KB are examined. Testing `/^[A-Za-z0-9+/=]+$/` against a
  * whole payload overflows V8's regex stack once the string reaches a few

@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { visualStyles } from "../store/use-visual-style";
 import { getModelDisplayName } from "@/features/agents/utils";
-import { getImageUrl } from "@/features/images/utils";
+import { getImageUrl, imageExtensionFromPath } from "@/features/images/utils";
 import { useImageDownload } from "@/features/images/hooks/use-image-download";
 import { useImageLoading } from "@/features/editor/hooks/use-image-loading";
 import { motion, AnimatePresence } from "framer-motion";
@@ -31,7 +31,12 @@ export function ImageCard({ image }: ImageCardProps) {
   const { downloadImage, isDownloading } = useImageDownload();
 
   const handleDownload = () => {
-    downloadImage(imageUrl, `SketchpadAI-${Date.now()}.webp`);
+    // Extension follows the stored object. It used to be a hard-coded ".webp"
+    // on files that have always been PNG.
+    downloadImage(
+      imageUrl,
+      `SketchpadAI-${Date.now()}.${imageExtensionFromPath(image.fullPath)}`,
+    );
   };
 
   const handleCopyPrompt = () => {
