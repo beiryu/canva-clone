@@ -25,7 +25,15 @@ export const useImportImage = () => {
       const response = await client.api.images.import.$post({ json });
 
       if (!response.ok) {
-        throw new Error("Failed to import image");
+        // The server distinguishes failure reasons (dead link, hotlink
+        // block, oversized file, …) — surface that instead of a flat string.
+        const body = await response.json().catch(() => null);
+        const message =
+          body && typeof body === "object" && "error" in body
+            ? String(body.error)
+            : "Failed to import image";
+
+        throw new Error(message);
       }
 
       return await response.json();
@@ -41,7 +49,7 @@ export const useImportImage = () => {
     },
     onError: (error) => {
       console.error("Error importing image:", error);
-      toast.error("Failed to import image");
+      toast.error(error.message || "Failed to import image");
     },
   });
 

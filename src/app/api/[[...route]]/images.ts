@@ -77,7 +77,11 @@ const isSafeRemoteImageUrl = (value: string) => {
     return false;
   }
 
-  if (url.protocol !== "https:") {
+  // http is allowed too — a large share of Google Images results are still
+  // served over plain http, and this would otherwise reject them outright.
+  // SSRF protection here relies on the hostname blocklist below, not on
+  // requiring TLS.
+  if (url.protocol !== "https:" && url.protocol !== "http:") {
     return false;
   }
 
@@ -241,7 +245,16 @@ const app = new Hono()
         return c.json({ data: savedImage });
       } catch (error) {
         console.error("Error importing remote image:", error);
-        return c.json({ error: "Failed to import image" }, 500);
+
+        // Surfaces the real reason (dead link, hotlink block, oversized file,
+        // non-image response, …) — search-result URLs fail for many different
+        // reasons and a flat message gives the user no way to tell whether
+        // retrying is worth it. `uploadRemoteImageToSupabase` only ever wraps
+        // controlled, message-only errors here, nothing sensitive to leak.
+        const message =
+          error instanceof Error ? error.message : "Failed to import image";
+
+        return c.json({ error: message }, 502);
       }
     },
   )
