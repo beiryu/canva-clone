@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -9,6 +9,7 @@ import {
   FileIcon,
   Loader,
   MoreHorizontal,
+  PencilIcon,
   Search,
   Trash,
 } from "lucide-react";
@@ -16,6 +17,7 @@ import {
 import { useGetProjects } from "@/features/projects/api/use-get-projects";
 import { useDeleteProject } from "@/features/projects/api/use-delete-project";
 import { useDuplicateProject } from "@/features/projects/api/use-duplicate-project";
+import { RenameProjectDialog } from "@/features/projects/components/rename-project-dialog";
 
 import {
   DropdownMenuContent,
@@ -36,8 +38,22 @@ export const ProjectsSection = () => {
   const removeMutation = useDeleteProject();
   const router = useRouter();
 
+  // Two pieces of state, not one: the dialog unmounts on `renameTarget`, but
+  // closes on `isRenameOpen`. Collapsing them would rip the dialog out of the
+  // DOM before its exit animation could run.
+  const [renameTarget, setRenameTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [isRenameOpen, setIsRenameOpen] = useState(false);
+
   const onCopy = (id: string) => {
     duplicateMutation.mutate({ id });
+  };
+
+  const onRename = (project: { id: string; name: string }) => {
+    setRenameTarget({ id: project.id, name: project.name });
+    setIsRenameOpen(true);
   };
 
   const onDelete = async (id: string) => {
@@ -91,6 +107,18 @@ export const ProjectsSection = () => {
   return (
     <div className="space-y-4">
       <ConfirmDialog />
+      {/* Mounted while a target exists rather than while the dialog is open,
+          so closing plays the exit animation instead of vanishing. The key
+          forces a fresh instance per row — the dialog seeds its input from
+          this prop on mount only. */}
+      {renameTarget && (
+        <RenameProjectDialog
+          key={renameTarget.id}
+          project={renameTarget}
+          open={isRenameOpen}
+          onOpenChange={setIsRenameOpen}
+        />
+      )}
       <h3 className="font-semibold text-lg">Recent projects</h3>
       <Table>
         <TableBody>
@@ -130,6 +158,15 @@ export const ProjectsSection = () => {
                         align="end"
                         className="w-60 bg-black"
                       >
+                        {/* No isPending gate like the other two: the rename
+                            mutation lives inside the dialog, out of reach. */}
+                        <DropdownMenuItem
+                          className="h-10 cursor-pointer"
+                          onClick={() => onRename(project)}
+                        >
+                          <PencilIcon className="size-4 mr-2" />
+                          Rename
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           className="h-10 cursor-pointer"
                           disabled={duplicateMutation.isPending}

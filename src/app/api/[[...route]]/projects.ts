@@ -145,7 +145,18 @@ const app = new Hono()
           createdAt: true,
           updatedAt: true,
         })
-        .partial(),
+        .partial()
+        // The derived `name` is a bare z.string(), so a blank one would save.
+        // `.trim()` transforms, meaning the column gets the trimmed value even
+        // when a client skips trimming.
+        //
+        // `.optional()` is load-bearing: .extend() after .partial() replaces
+        // the field outright, and without it `name` becomes required on every
+        // PATCH — which would reject every editor autosave, since those send
+        // only { json, height, width }.
+        .extend({
+          name: z.string().trim().min(1).max(100).optional(),
+        }),
     ),
     async (c) => {
       const auth = c.get("authUser");

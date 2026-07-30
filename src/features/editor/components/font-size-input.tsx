@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Minus, Plus } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
@@ -9,12 +10,40 @@ interface FontSizeInputProps {
 }
 
 export const FontSizeInput = ({ value, onChange }: FontSizeInputProps) => {
-  const increment = () => onChange(value + 1);
-  const decrement = () => onChange(value - 1);
+  // Buffered separately from `value` so the field can go through an empty/
+  // partial state while typing (e.g. clearing "32" to type "48") without
+  // ever committing NaN to the fabric object.
+  const [text, setText] = useState(String(value));
+
+  useEffect(() => {
+    setText(String(value));
+  }, [value]);
+
+  const commit = (next: number) => {
+    setText(String(next));
+    onChange(next);
+  };
+
+  const increment = () => commit(value + 1);
+  const decrement = () => commit(Math.max(1, value - 1));
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value, 10);
-    onChange(value);
+    const raw = e.target.value;
+    setText(raw);
+
+    const parsed = parseInt(raw, 10);
+
+    if (!Number.isNaN(parsed) && parsed > 0) {
+      onChange(parsed);
+    }
+  };
+
+  const handleBlur = () => {
+    // Reverts an empty/invalid buffer back to the last committed value
+    // instead of leaving the input stuck on blank text.
+    if (parseInt(text, 10) !== value) {
+      setText(String(value));
+    }
   };
 
   return (
@@ -29,7 +58,8 @@ export const FontSizeInput = ({ value, onChange }: FontSizeInputProps) => {
       </Button>
       <Input
         onChange={handleChange}
-        value={value}
+        onBlur={handleBlur}
+        value={text}
         className="w-[50px] h-8 focus-visible:ring-offset-0 focus-visible:ring-0 rounded-none"
       />
       <Button
