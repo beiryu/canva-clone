@@ -77,10 +77,10 @@ const productionModels: [AnyModel, ModelConfig][] = [
     },
   ],
   [
-    "gpt-5.4-mini",
+    "qwen2-vl-7b-instruct",
     {
-      provider: "openai",
-      name: "GPT-5.4 mini",
+      provider: "replicate",
+      name: "Qwen2-VL 7B Instruct",
       description: "Reads the canvas and writes a thumbnail prompt",
       capabilities: ["text-generation"],
       params: {

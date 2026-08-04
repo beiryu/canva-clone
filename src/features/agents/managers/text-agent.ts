@@ -1,5 +1,4 @@
 import { modelRegistry } from "../models";
-import { getOpenAIProvider } from "../providers/openai";
 import { getReplicateProvider } from "../providers/replicate";
 import {
   AgentProvider,
@@ -13,9 +12,6 @@ export class TextAgent {
 
   constructor() {
     this.providers.set("replicate", getReplicateProvider());
-    // The auto-prompt model is a vision model on OpenAI. Without this entry the
-    // registry resolves it to "Provider openai not configured".
-    this.providers.set("openai", getOpenAIProvider());
   }
 
   async autoPrompt(options: AutoPromptOptions): Promise<TextGenerationResult> {

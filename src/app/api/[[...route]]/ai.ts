@@ -262,8 +262,9 @@ const app = new Hono()
 
       try {
         // Deliberately no Supabase upload here, unlike the generate route: the
-        // capture is a throwaway 512px JPEG and OpenAI accepts it inline, so
-        // persisting it would only add latency and storage litter.
+        // capture is a throwaway 512px JPEG and Replicate accepts it inline as
+        // a data URI, so persisting it would only add latency and storage
+        // litter.
         const result = await agentManager.autoPrompt({
           model,
           canvasImage,

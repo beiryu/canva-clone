@@ -3,6 +3,7 @@ import { replicate } from "@/lib/replicate";
 import { BaseModelHandler } from "../model-handler";
 import {
   AgentProvider,
+  AutoPromptOptions,
   BackgroundRemoverHandler,
   ImageGenerationHandler,
   ImageGenerationOptions,
@@ -14,6 +15,8 @@ import {
   StyleAnalysisHandler,
   StyleAnalysisOptions,
   StyleAnalysisResult,
+  TextGenerationHandler,
+  TextGenerationResult,
 } from "../types";
 import {
   buildImagePrompt,
@@ -226,12 +229,104 @@ class JanusProStyleHandler
   }
 }
 
+/**
+ * Deliberately thin. This used to prescribe the thumbnail — hero subject, high
+ * contrast, and "deliberate negative space for a headline" — and that last
+ * clause is why generated thumbnails came back wordless: it is an instruction
+ * to leave the headline out, so the model dutifully left it out even when the
+ * canvas had text on it. Describing what is there beats dictating a layout;
+ * the composition is the model's call now.
+ */
+const AUTO_PROMPT_SYSTEM =
+  "You write prompts for AI image generators that produce high-performing " +
+  "YouTube thumbnails. Study the user's canvas and write ONE image-generation " +
+  "prompt for the thumbnail it is meant to become. Describe what is actually " +
+  "on the canvas, text included, and judge the rest yourself. A visual style " +
+  "is applied separately after your prompt, so describe the subject and the " +
+  "scene and leave the rendering style out. Reply with the prompt only - no " +
+  "preamble, no markdown.";
+
+/**
+ * Style guidance is one dense paragraph plus the fixed composition rules
+ * appended in the style-presets route — 250-350 tokens against a ~226-token
+ * baseline for the whole request. The writer only needs the palette and
+ * technique descriptors at the head of it to avoid contradicting the style, so
+ * the tail is dropped rather than doubling the input for a weaker signal.
+ */
+const STYLE_CONTEXT_MAX_CHARS = 600;
+
+/**
+ * Turns the current canvas into a thumbnail prompt. Qwen2-VL is a single-turn
+ * image+text model (no separate system role), so the system instruction and
+ * context sections are folded into one `prompt` string.
+ */
+class Qwen2VLAutoPromptHandler
+  extends BaseModelHandler
+  implements TextGenerationHandler
+{
+  constructor() {
+    super("qwen2-vl-7b-instruct", ["text-generation"]);
+  }
+
+  async autoPrompt(options: AutoPromptOptions): Promise<TextGenerationResult> {
+    const { canvasImage, context, styleName, styleInstruction } = options;
+
+    try {
+      const trimmedContext = context?.trim();
+      const trimmedInstruction = styleInstruction?.trim();
+
+      const styleContext = trimmedInstruction
+        ? `Style applied afterwards${styleName ? ` (${styleName})` : ""}: ` +
+          trimmedInstruction.slice(0, STYLE_CONTEXT_MAX_CHARS)
+        : styleName
+          ? `Style applied afterwards: ${styleName}`
+          : null;
+
+      const sections = [
+        trimmedContext ? `Video topic / notes: ${trimmedContext}` : null,
+        styleContext,
+        "Here is my canvas.",
+      ].filter(Boolean);
+
+      const input = {
+        media: canvasImage,
+        prompt: [AUTO_PROMPT_SYSTEM, ...sections].join("\n\n"),
+        max_new_tokens: 300,
+      };
+
+      console.log("Writing auto prompt with Qwen2-VL 7B Instruct");
+
+      // Pinned to a version hash — this is a community-published model, so the
+      // `model:` endpoint 404s for it.
+      const prediction = await replicate.predictions.create({
+        version:
+          "lucataco/qwen2-vl-7b-instruct:bf57361c75677fc33d480d0c5f02926e621b2caa2000347cb74aeae9d2ca07ee",
+        input,
+      });
+
+      const completedPrediction = await replicate.wait(prediction);
+
+      const text = joinTextOutput(completedPrediction.output, this.model).trim();
+
+      if (!text) {
+        throw new Error("Qwen2-VL returned no prompt text");
+      }
+
+      return { text };
+    } catch (error) {
+      console.error("Error generating auto prompt:", error);
+      throw error;
+    }
+  }
+}
+
 export class ReplicateProvider implements AgentProvider {
   name = "replicate";
   supportedCapabilities: ModelCapability[] = [
     "image-generation",
     "background-remover",
     "style-analysis",
+    "text-generation",
   ];
 
   private modelHandlers: Map<string, ModelHandler> = new Map();
@@ -240,6 +335,7 @@ export class ReplicateProvider implements AgentProvider {
     this.registerHandler(new Seedream5LiteHandler());
     this.registerHandler(new LabsBackgroundRemoverHandler());
     this.registerHandler(new JanusProStyleHandler());
+    this.registerHandler(new Qwen2VLAutoPromptHandler());
   }
 
   private registerHandler(handler: ModelHandler): void {

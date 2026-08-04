@@ -4,7 +4,6 @@ import { BaseModelHandler } from "../model-handler";
 import { GPT_IMAGE_SIZES } from "../model-ids";
 import {
   AgentProvider,
-  AutoPromptOptions,
   ImageAspectRatio,
   ImageGenerationHandler,
   ImageGenerationOptions,
@@ -12,8 +11,6 @@ import {
   ImageQuality,
   ModelCapability,
   ModelHandler,
-  TextGenerationHandler,
-  TextGenerationResult,
 } from "../types";
 import { buildImagePrompt, orderInputImages } from "../utils";
 
@@ -166,120 +163,14 @@ class GPTImage2Handler
   }
 }
 
-const AUTO_PROMPT_MODEL = "gpt-5.4-mini";
-
-/**
- * Deliberately thin. This used to prescribe the thumbnail — hero subject, high
- * contrast, and "deliberate negative space for a headline" — and that last
- * clause is why generated thumbnails came back wordless: it is an instruction
- * to leave the headline out, so the model dutifully left it out even when the
- * canvas had text on it. Describing what is there beats dictating a layout;
- * the composition is the model's call now.
- */
-const AUTO_PROMPT_SYSTEM =
-  "You write prompts for AI image generators that produce high-performing " +
-  "YouTube thumbnails. Study the user's canvas and write ONE image-generation " +
-  "prompt for the thumbnail it is meant to become. Describe what is actually " +
-  "on the canvas, text included, and judge the rest yourself. A visual style " +
-  "is applied separately after your prompt, so describe the subject and the " +
-  "scene and leave the rendering style out. Reply with the prompt only - no " +
-  "preamble, no markdown.";
-
-/**
- * Style guidance is one dense paragraph plus the fixed composition rules
- * appended in the style-presets route — 250-350 tokens against a ~226-token
- * baseline for the whole request. The writer only needs the palette and
- * technique descriptors at the head of it to avoid contradicting the style, so
- * the tail is dropped rather than doubling the input for a weaker signal.
- */
-const STYLE_CONTEXT_MAX_CHARS = 600;
-
-/**
- * Turns the current canvas into a thumbnail prompt.
- *
- * Lives on the OpenAI provider rather than Replicate because this is a vision
- * task: the model has to actually look at the drawing. The DeepSeek text model
- * this replaced could not.
- */
-class GPT54MiniAutoPromptHandler
-  extends BaseModelHandler
-  implements TextGenerationHandler
-{
-  constructor() {
-    super(AUTO_PROMPT_MODEL, ["text-generation"]);
-  }
-
-  async autoPrompt(options: AutoPromptOptions): Promise<TextGenerationResult> {
-    const { canvasImage, context, styleName, styleInstruction } = options;
-
-    try {
-      const openai = getOpenAIClient();
-
-      const trimmedContext = context?.trim();
-      const trimmedInstruction = styleInstruction?.trim();
-
-      const styleContext = trimmedInstruction
-        ? `Style applied afterwards${styleName ? ` (${styleName})` : ""}: ` +
-          trimmedInstruction.slice(0, STYLE_CONTEXT_MAX_CHARS)
-        : styleName
-          ? `Style applied afterwards: ${styleName}`
-          : null;
-
-      const sections = [
-        trimmedContext ? `Video topic / notes: ${trimmedContext}` : null,
-        styleContext,
-        "Here is my canvas.",
-      ].filter(Boolean);
-
-      const response = await openai.chat.completions.create({
-        model: AUTO_PROMPT_MODEL,
-        messages: [
-          { role: "system", content: AUTO_PROMPT_SYSTEM },
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                // The text goes before the image: tested, it steers the result
-                // without overriding what is actually drawn.
-                text: sections.join("\n\n"),
-              },
-              { type: "image_url", image_url: { url: canvasImage } },
-            ],
-          },
-        ],
-        // Observed output is ~120 tokens, so this is headroom, not a squeeze.
-        max_completion_tokens: 300,
-        // No `temperature` — the verified request omits it and gpt-5.x rejects
-        // some legacy sampling params.
-      });
-
-      const text = response.choices[0]?.message?.content?.trim();
-
-      if (!text) {
-        throw new Error("OpenAI returned no prompt text");
-      }
-
-      return { text };
-    } catch (error) {
-      console.error("Error generating auto prompt:", error);
-      return rethrowWithReason(error);
-    }
-  }
-}
-
 export class OpenAIProvider implements AgentProvider {
   name = "openai";
-  supportedCapabilities: ModelCapability[] = [
-    "image-generation",
-    "text-generation",
-  ];
+  supportedCapabilities: ModelCapability[] = ["image-generation"];
 
   private modelHandlers: Map<string, ModelHandler> = new Map();
 
   constructor() {
     this.registerHandler(new GPTImage2Handler());
-    this.registerHandler(new GPT54MiniAutoPromptHandler());
   }
 
   private registerHandler(handler: ModelHandler): void {

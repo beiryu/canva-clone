@@ -13,14 +13,14 @@ export const IMAGE_GENERATION_MODELS = [
   "seedream-5-lite",
 ] as const;
 
-export const TEXT_GENERATION_MODELS = ["gpt-5.4-mini"] as const;
+export const TEXT_GENERATION_MODELS = ["qwen2-vl-7b-instruct"] as const;
 
 export const BACKGROUND_REMOVER_MODELS = ["labs/background-remover"] as const;
 
 export const STYLE_ANALYSIS_MODELS = ["janus-pro-7b"] as const;
 
 export const DEFAULT_IMAGE_MODEL = "gpt-image-2";
-export const DEFAULT_TEXT_MODEL = "gpt-5.4-mini";
+export const DEFAULT_TEXT_MODEL = "qwen2-vl-7b-instruct";
 export const DEFAULT_STYLE_ANALYSIS_MODEL = "janus-pro-7b";
 
 /**
